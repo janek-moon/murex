@@ -2,7 +2,7 @@
 
 use std::path::Path;
 
-use ouroboros_spiral as sp;
+use murex as sp;
 use tempfile::TempDir;
 
 fn expect_err<T>(result: sp::Result<T>, needle: &str) {
@@ -117,4 +117,15 @@ fn risk_ids_rank_numerically_past_ten() {
         sp::add_risk(root, &format!("risk {i}"), 0.5, 0.5, "").expect("add");
     }
     assert_eq!(open_ids(root)[..3], ["R1", "R2", "R3"]);
+}
+
+#[test]
+fn state_lands_under_the_tool_directory() {
+    let tmp = TempDir::new().expect("temp dir");
+    let root = tmp.path();
+    sp::start(root, "path check", vec![], vec![]).expect("start");
+    assert_eq!(sp::STATE_PATH, ".murex/spiral.json");
+    assert!(root.join(".murex/spiral.json").exists());
+    // The host's directory is no longer ours to write into.
+    assert!(!root.join(".ouroboros").exists());
 }

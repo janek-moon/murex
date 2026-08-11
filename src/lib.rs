@@ -18,7 +18,7 @@ use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 
-pub const STATE_PATH: &str = ".ouroboros/spiral.json";
+pub const STATE_PATH: &str = ".murex/spiral.json";
 pub const DECISIONS: [&str; 3] = ["continue", "pivot", "stop"];
 /// A risk still steers cycles until it is resolved or explicitly accepted.
 pub const OPEN_STATES: [&str; 2] = ["open", "mitigating"];
@@ -117,7 +117,7 @@ fn state_file(root: &Path) -> PathBuf {
 pub fn load(root: &Path) -> Result<Spiral> {
     let path = state_file(root);
     if !path.exists() {
-        return err("no spiral here - run `ooo spiral start \"<objective>\"` first");
+        return err("no spiral here - run `ooo murex start \"<objective>\"` first");
     }
     let text = fs::read_to_string(&path)
         .map_err(|e| SpiralError(format!("cannot read {}: {e}", path.display())))?;
@@ -188,7 +188,7 @@ pub fn start(
     let path = state_file(root);
     if path.exists() {
         return err(format!(
-            "spiral already exists at {} - see `ooo spiral status`",
+            "spiral already exists at {} - see `ooo murex status`",
             path.display()
         ));
     }
@@ -209,7 +209,7 @@ pub fn start(
         "objective": objective,
         "status": "active",
         "state_file": path.display().to_string(),
-        "next": "ooo spiral risk add \"<risk>\" --probability 0.7 --impact 0.9",
+        "next": "ooo murex risk add \"<risk>\" --probability 0.7 --impact 0.9",
     }))
 }
 
@@ -302,7 +302,7 @@ pub fn open_cycle(root: &Path, objectives: Vec<String>) -> Result<Value> {
     if let Some(index) = pending_index(&state) {
         return err(format!(
             "cycle {} is still open - close it with \
-             `ooo spiral commit --decision <continue|pivot|stop>`",
+             `ooo murex commit --decision <continue|pivot|stop>`",
             state.cycles[index].n
         ));
     }
@@ -311,7 +311,7 @@ pub fn open_cycle(root: &Path, objectives: Vec<String>) -> Result<Value> {
         None => {
             return err(
                 "no open risks - a spiral cycle must be driven by one. Add a risk \
-                 with `ooo spiral risk add`, or close out with `ooo spiral stop`.",
+                 with `ooo murex risk add`, or close out with `ooo murex stop`.",
             )
         }
     };
@@ -345,7 +345,7 @@ pub fn open_cycle(root: &Path, objectives: Vec<String>) -> Result<Value> {
         "next": [
             "hand the brief to the runtime, e.g. `ooo auto \"<instruction>\"`",
             format!(
-                "then `ooo spiral commit --decision continue --cost <n> --resolve {top_id}`"
+                "then `ooo murex commit --decision continue --cost <n> --resolve {top_id}`"
             ),
         ],
     }))
@@ -368,7 +368,7 @@ pub fn commit(
     }
     let mut state = load(root)?;
     let Some(index) = pending_index(&state) else {
-        return err("no open cycle - start one with `ooo spiral cycle`");
+        return err("no open cycle - start one with `ooo murex cycle`");
     };
     let n = state.cycles[index].n;
     // Resolve every id before mutating, so one bad id cannot half-apply.
