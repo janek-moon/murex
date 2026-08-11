@@ -153,7 +153,9 @@ pub fn ranked_open_risks(state: &Spiral) -> Vec<&Risk> {
 }
 
 fn total_exposure(state: &Spiral) -> f64 {
-    round4(ranked_open_risks(state).iter().map(|r| r.exposure()).sum())
+    // Sum for f64 uses -0.0 as its identity, so an empty register would report
+    // -0.0 at exactly the moment the docs say to look for zero; + 0.0 fixes the sign.
+    round4(ranked_open_risks(state).iter().map(|r| r.exposure()).sum::<f64>() + 0.0)
 }
 
 fn pending_index(state: &Spiral) -> Option<usize> {
