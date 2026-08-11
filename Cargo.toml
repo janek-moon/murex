@@ -2,7 +2,7 @@
 name = "murex"
 version = "0.1.0"
 edition = "2021"
-description = "Boehm spiral-model cycle controller for Ouroboros"
+description = "Boehm spiral-model conductor: risk register, top-risk selection, and the commitment gate between cycles"
 license = "MIT"
 
 [dependencies]
