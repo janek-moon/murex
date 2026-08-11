@@ -23,6 +23,19 @@ work - `ooo murex cycle` emits a spike brief you hand to `ooo auto` or
 ## Build and install
 
 ```bash
+./install.sh
+```
+
+That installs Ouroboros first if it is missing — murex is a plugin, so the
+`ooo murex` invocation does not exist without a host — then builds the binary
+and registers one with the other. It needs `cargo`, and `uv` only when
+Ouroboros has to be installed; it fails with a pointer rather than guessing if
+either is absent.
+
+The same thing by hand:
+
+```bash
+uv tool install ouroboros-ai        # only if `ouroboros` is not already there
 cargo install --path .              # puts `murex` on PATH
 ouroboros plugin discover .         # inspect the manifest, writes nothing
 ouroboros plugin install .
