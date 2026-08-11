@@ -1,0 +1,9 @@
+{
+  "name": "murex",
+  "version": "0.1.0",
+  "description": "Boehm spiral-model conductor: risk register, top-risk selection, and the commitment gate between cycles. Execution is delegated to Ouroboros (ooo auto).",
+  "author": {
+    "name": "janek-moon",
+    "url": "https://github.com/janek-moon"
+  }
+}

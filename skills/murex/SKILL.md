@@ -1,78 +1,100 @@
 ---
 name: murex
-description: "Run risk-driven spiral-model cycles: register risks, de-risk the largest one per cycle, gate on a commitment review"
+description: "Run risk-driven spiral-model development: register risks, spike the largest one per cycle through Ouroboros (ooo auto), gate on a commitment review, repeat until exposure is drained"
 ---
 
-# ooo murex - Risk-Driven Spiral Cycles
+# murex - Spiral-Model Conductor
 
 ## Description
 
-`ooo evolve` iterates until a quality gate passes. `ooo murex` iterates until
-the **risks** are retired. Each cycle exists to produce evidence about exactly
-one risk - the highest-exposure open one - and every cycle ends in a
-commitment review that decides whether the next one is worth its cost.
+You are the conductor of a Boehm spiral. Three parts, three jobs:
 
-Use this skill when the work has real unknowns: an unproven integration, a
+- **`murex`** (this plugin's binary) - the deterministic bookkeeping: risk
+  register, top-risk selection, the commitment gate. It never executes work.
+- **Ouroboros** (`ooo auto`) - the execution engine. Each cycle's spike runs
+  through it.
+- **You** - interview the human into a scored risk register, hand each cycle's
+  brief to the engine, verify the evidence it brings back, close the gate,
+  repeat.
+
+Use this when the work has real unknowns: an unproven integration, a
 performance target nobody has measured, a vendor API that may not do what the
-docs claim. If the requirements are already clear, use `ooo auto` instead -
-a spiral with no risks is just a slower waterfall.
+docs claim. If the requirements are already clear, skip murex and run
+`ooo auto` directly - a spiral with no risks is just a slower waterfall.
 
-This plugin does not execute work. `ooo murex cycle` emits a **spike brief**;
-hand that brief to `ooo auto` or `ooo run`, then report back with
-`ooo murex commit`.
+Where `ooo evolve` iterates until a quality gate passes, this loop iterates
+until the **risks** are retired - and a commitment review between cycles
+decides whether the next one is worth its cost.
 
-## Flow
+## Prerequisites
 
-```
-start(objective)
-  -> risk add (one entry per unknown, scored probability x impact)
-  -> cycle          # picks the top-exposure risk, emits the spike brief
-  -> [ooo auto/run] # you execute the brief through the normal runtime
-  -> commit         # decision + cost; resolves the risk if evidence held
-  -> cycle ...      # repeat; radius grows with cost, exposure should fall
+`murex` and `ooo` must be on PATH:
+
+```bash
+command -v murex || cargo install --git https://github.com/janek-moon/murex
+command -v ooo   || uv tool install ouroboros-ai
 ```
 
-The spiral converges when `remaining_exposure` reaches 0, and terminates early
-whenever a commitment review returns `stop`.
+(From a checkout, `./install.sh` does both and registers the plugin with
+Ouroboros as well.)
 
-## Usage
+## The loop
+
+```
+start -> risk add (interview) -> [ cycle -> ooo auto -> commit ]* -> drained
+```
 
 ### 1. Open the spiral
 
 ```bash
-ooo murex start "ship realtime collaborative editing" \
+murex --root . start "ship realtime collaborative editing" \
   --constraint "must stay on the existing Postgres box" \
   --alternative "CRDT" --alternative "OT with a central server"
 ```
 
-### 2. Register what you do not know
+### 2. Register what is not known
 
-Score each risk with `probability` (0..1) that it bites, and `impact` (0..1)
-of the damage if it does. Exposure is their product; only the ranking matters,
-so score consistently rather than precisely.
+Interview the human for the unknowns, then score each: `probability` (0..1)
+that it bites, `impact` (0..1) of the damage if it does. Exposure is the
+product; only the ranking matters, so score consistently rather than precisely.
 
 ```bash
-ooo murex risk add "CRDT memory footprint may exceed the 2GB box limit" \
+murex --root . risk add "CRDT memory footprint may exceed the 2GB box limit" \
   --probability 0.6 --impact 0.9 \
   --mitigation "prototype with a 10k-op document, measure RSS"
-ooo murex risk add "Vendor websocket SDK may not support our auth scheme" \
+murex --root . risk add "Vendor websocket SDK may not support our auth scheme" \
   --probability 0.4 --impact 0.7
-ooo murex risk list
 ```
 
-### 3. Open a cycle and read the brief
+### 3. Open a cycle
 
 ```bash
-ooo murex cycle
+murex --root . cycle
 ```
 
-Returns the brief for the top risk. Execute it through the normal runtime -
-build the smallest prototype that produces evidence, and nothing more.
+Returns the spike brief for the highest-exposure open risk: an `instruction`
+that names exactly one risk and forbids broadening scope.
 
-### 4. Commitment review
+### 4. Execute the spike through Ouroboros
+
+Hand the brief's `instruction` to the engine:
 
 ```bash
-ooo murex commit --decision continue --cost 1.5 \
+ooo auto "<brief.instruction>"
+```
+
+Driving from Codex, add `--runtime codex`. If the run detaches into a
+background job, wait for it: `ooo job wait <job-id>`, then fetch the result
+with `ooo job result <job-id>`.
+
+When the engine returns, **verify the evidence yourself** - read what it
+built, run its checks - before touching the gate. The gate records what you
+verified, not what the engine claims.
+
+### 5. Commitment review
+
+```bash
+murex --root . commit --decision continue --cost 1.5 \
   --resolve R1 --evidence "10k-op doc held at 380MB RSS; headroom is fine" \
   --outcome "CRDT approach viable"
 ```
@@ -85,24 +107,29 @@ ooo murex commit --decision continue --cost 1.5 \
 | `pivot`    | Evidence killed the current approach; switch to an alternative. |
 | `stop`     | The objective is not worth the remaining exposure. Spiral ends. |
 
-Omit `--resolve` when the spike was inconclusive - the risk stays open and
-will be picked again, which is the correct signal that it needs another cycle.
+Pass `--resolve` only when the evidence genuinely retires the risk. An
+inconclusive spike leaves the risk open, and it will be picked again - which
+is the correct signal that it needs another cycle.
 
-### 5. Check the radius
+### 6. Repeat until drained
+
+Go back to step 3. Check convergence with:
 
 ```bash
-ooo murex status
+murex --root . status
 ```
 
-Reports cycles completed, `cumulative_cost` (the spiral's radius), and
-`remaining_exposure`. Falling exposure against rising cost is convergence;
-flat exposure across two cycles means the spikes are not producing evidence -
-reframe the risk before spending another cycle.
+Reports `radius` (cycles completed, cumulative cost) and `remaining_exposure`.
+Falling exposure against rising cost is convergence; the spiral is done when
+`remaining_exposure` reaches 0 or a commit decides `stop`. Flat exposure
+across two cycles means the spikes are not producing evidence - reframe the
+risk with the human before spending another cycle.
 
 ## Notes
 
-- State lives in `.murex/spiral.json`; commit it to share the register.
-- Risks are never deleted, only `resolved` or `accepted`, so the history of
-  what you knowingly shipped past stays auditable.
-- `accepted` is a real option: use it for risks you have decided to live with
-  rather than spend a cycle on.
+- State lives in `.murex/spiral.json` in the target repo; commit it to share
+  the register. Risks are never deleted, only `resolved` or `accepted`
+  (`murex risk close <id> --status accepted` for risks the human decides to
+  live with), so what you knowingly shipped past stays auditable.
+- Registered as an Ouroboros plugin (`ouroboros plugin install .`), the same
+  commands are also available as `ooo murex <cmd>`.

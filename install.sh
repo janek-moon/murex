@@ -46,6 +46,15 @@ echo "==> Registering murex as an Ouroboros plugin"
 # `add --plugin <name>` expects a plugin catalog, which it does not have.
 ouroboros plugin install "$REPO"
 
+# Codex discovers skills from ~/.codex/skills/<name>/SKILL.md - the same
+# format Claude Code reads from this repo's skills/ directory, so one link
+# serves both hosts.
+if [ -d "$HOME/.codex" ]; then
+    mkdir -p "$HOME/.codex/skills"
+    ln -sfn "$REPO/skills/murex" "$HOME/.codex/skills/murex"
+    echo "==> Linked skill into ~/.codex/skills/murex"
+fi
+
 echo
 echo "Done. Start a spiral with:"
 echo "  ooo murex start \"<objective>\""
