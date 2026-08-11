@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rename `ouroboros-spiral` to `murex`</title>
+<style>
+  :root {
+    --color-text: #1f2328;
+    --color-muted: #656d76;
+    --color-bg: #ffffff;
+    --color-surface: #f6f8fa;
+    --color-surface-alt: #ffffff;
+    --color-border: #d0d7de;
+    --color-link: #0969da;
+    --color-link-hover: #0550ae;
+    --color-code-bg: #f6f8fa;
+    --color-code-border: #d0d7de;
+    --color-high-bg: #fff1f0;
+    --color-high-border: #ffa39e;
+    --color-high-text: #cf1322;
+    --color-medium-bg: #fffbe6;
+    --color-medium-border: #ffe58f;
+    --color-medium-text: #d48806;
+    --color-low-bg: #f6ffed;
+    --color-low-border: #b7eb8f;
+    --color-low-text: #389e0d;
+    --color-info-bg: #e6f4ff;
+    --color-info-border: #91caff;
+    --color-info-text: #0958d9;
+    --color-toc-active: #0969da;
+    --color-toc-active-bg: #ddf4ff;
+    --color-checkbox-done: #d0d7de;
+  }
+  [data-theme="dark"] {
+    --color-text: #e6edf3;
+    --color-muted: #8b949e;
+    --color-bg: #0d1117;
+    --color-surface: #161b22;
+    --color-surface-alt: #161b22;
+    --color-border: #30363d;
+    --color-link: #58a6ff;
+    --color-link-hover: #79b8ff;
+    --color-code-bg: #161b22;
+    --color-code-border: #30363d;
+    --color-high-bg: #3a1518;
+    --color-high-border: #f85149;
+    --color-high-text: #ff7b72;
+    --color-medium-bg: #3a2e0a;
+    --color-medium-border: #d4a72c;
+    --color-medium-text: #e3b341;
+    --color-low-bg: #0f3025;
+    --color-low-border: #2ea043;
+    --color-low-text: #56d364;
+    --color-info-bg: #0d2d4d;
+    --color-info-border: #388bfd;
+    --color-info-text: #79b8ff;
+    --color-toc-active: #58a6ff;
+    --color-toc-active-bg: #1f2d3d;
+    --color-checkbox-done: #30363d;
+  }
+
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--color-bg);
+    color: var(--color-text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Apple SD Gothic Neo",
+      "Noto Sans KR", Roboto, sans-serif;
+    line-height: 1.65; font-size: 15px;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+
+  .layout {
+    max-width: 960px;
+    margin: 24px auto 96px;
+    padding: 0 32px;
+  }
+  main.content { min-width: 0; }
+
+  header.page-header {
+    border-bottom: 1px solid var(--color-border);
+    padding-bottom: 24px;
+    margin-bottom: 32px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  header.page-header h1 {
+    margin: 0 0 8px;
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+  header.page-header .meta {
+    color: var(--color-muted);
+    font-size: 14px;
+  }
+  header.page-header .meta span + span::before {
+    content: "·"; margin: 0 8px; color: var(--color-border);
+  }
+  .header-tools { display: flex; gap: 8px; align-items: center; }
+  .theme-toggle {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    color: var(--color-text);
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    font-family: inherit;
+    transition: background 0.1s ease;
+  }
+  .theme-toggle:hover { background: var(--color-code-bg); }
+  .progress {
+    font-size: 12px;
+    color: var(--color-muted);
+    padding: 4px 10px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+  }
+
+  details.section {
+    margin: 24px 0;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    background: var(--color-surface-alt);
+    overflow: hidden;
+  }
+  details.section > summary {
+    cursor: pointer;
+    padding: 14px 18px;
+    font-weight: 600;
+    font-size: 18px;
+    list-style: none;
+    user-select: none;
+    background: var(--color-surface);
+    border-bottom: 1px solid transparent;
+    transition: border-color 0.1s ease;
+  }
+  details.section[open] > summary { border-bottom-color: var(--color-border); }
+  details.section > summary::-webkit-details-marker { display: none; }
+  details.section > summary::before {
+    content: "▸";
+    display: inline-block;
+    margin-right: 8px;
+    color: var(--color-muted);
+    transition: transform 0.15s ease;
+  }
+  details.section[open] > summary::before { transform: rotate(90deg); }
+  details.section > .section-body { padding: 4px 24px 20px; }
+
+  h2 { margin: 0; font-size: 20px; font-weight: 600; display: inline; }
+  h3 { margin: 28px 0 10px; font-size: 16px; font-weight: 600; }
+  h4 { margin: 18px 0 6px; font-size: 14px; font-weight: 600; color: var(--color-muted); }
+  p { margin: 10px 0; }
+
+  a { color: var(--color-link); text-decoration: none; }
+  a:hover { color: var(--color-link-hover); text-decoration: underline; }
+
+  code {
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 13px;
+    background: var(--color-code-bg);
+    padding: 2px 6px;
+    border-radius: 4px;
+    border: 1px solid var(--color-code-border);
+  }
+  pre {
+    background: var(--color-code-bg);
+    border: 1px solid var(--color-code-border);
+    border-radius: 6px;
+    padding: 14px 16px;
+    overflow-x: auto;
+    font-size: 13px;
+    line-height: 1.55;
+  }
+  pre code {
+    background: transparent;
+    padding: 0;
+    border: none;
+    font-size: inherit;
+  }
+
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 16px 0;
+    font-size: 14px;
+  }
+  th, td {
+    border: 1px solid var(--color-border);
+    padding: 8px 12px;
+    text-align: left;
+    vertical-align: top;
+  }
+  th {
+    background: var(--color-surface);
+    font-weight: 600;
+  }
+
+  blockquote {
+    margin: 16px 0;
+    padding: 12px 16px;
+    border-left: 4px solid var(--color-border);
+    background: var(--color-surface);
+    color: var(--color-muted);
+  }
+
+  ul, ol { padding-left: 24px; margin: 10px 0; }
+  li { margin: 4px 0; }
+
+  ul.task-list { list-style: none; padding-left: 4px; }
+  ul.task-list > li { padding-left: 0; }
+  ul.task-list input[type="checkbox"] {
+    margin-right: 8px;
+    cursor: pointer;
+    transform: translateY(1px);
+  }
+  ul.task-list li.checked > span.task-text {
+    color: var(--color-muted);
+    text-decoration: line-through;
+  }
+
+  .badge {
+    display: inline-block;
+    padding: 1px 8px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    border: 1px solid transparent;
+    vertical-align: middle;
+  }
+  .badge-high   { background: var(--color-high-bg);   border-color: var(--color-high-border);   color: var(--color-high-text); }
+  .badge-medium { background: var(--color-medium-bg); border-color: var(--color-medium-border); color: var(--color-medium-text); }
+  .badge-low    { background: var(--color-low-bg);    border-color: var(--color-low-border);    color: var(--color-low-text); }
+  .badge-info   { background: var(--color-info-bg);   border-color: var(--color-info-border);   color: var(--color-info-text); }
+
+  .callout {
+    margin: 18px 0;
+    padding: 14px 16px;
+    border-radius: 6px;
+    border: 1px solid;
+  }
+  .callout-info   { background: var(--color-info-bg);   border-color: var(--color-info-border);   color: var(--color-info-text); }
+  .callout-warn   { background: var(--color-medium-bg); border-color: var(--color-medium-border); color: var(--color-medium-text); }
+  .callout-danger { background: var(--color-high-bg);   border-color: var(--color-high-border);   color: var(--color-high-text); }
+
+  .mermaid {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    padding: 16px;
+    margin: 18px 0;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+<div class="layout">
+  <main class="content">
+    <header class="page-header">
+      <div>
+        <h1 id="page-title">Rename `ouroboros-spiral` to `murex`</h1>
+        <div class="meta">
+          <span><!-- META_LEFT --></span>
+          <span><!-- META_RIGHT --></span>
+        </div>
+      </div>
+      <div class="header-tools">
+        <span class="progress" id="task-progress" hidden></span>
+        <button class="theme-toggle" id="theme-toggle" type="button">🌓 테마</button>
+      </div>
+    </header>
+
+    <h1 id="rename-ouroboros-spiral-to-murex">Rename <code>ouroboros-spiral</code> to <code>murex</code></h1>
+<p>Date: 2026-08-11 Status: approved, not yet implemented</p>
+<h2 id="problem">Problem</h2>
+<p>The project is named <code>ouroboros-spiral</code>. That reads as an Ouroboros accessory rather than a tool, which understates it: the risk register and the commitment gate have no dependency on Ouroboros. Ouroboros executes the work; this project decides which risk each cycle must retire and whether the next cycle earns its cost. Nothing in that is Ouroboros-specific.</p>
+<p>The name also blocks a direction we want to keep open - running the same controller under Claude Code, Codex, or gjc directly, with Ouroboros demoted to one adapter among several.</p>
+<h2 id="decision">Decision</h2>
+<p>Rename to <strong><code>murex</code></strong> - a spiral-shelled sea snail, and the source of Tyrian purple in antiquity. The shell is the spiral; extracting the dye meant breaking the shell, which is the same bargain this tool makes explicit: you spend a cycle to learn something you cannot learn without spending it.</p>
+<p><code>spiral</code> steps down from the name to the domain vocabulary. Documentation keeps calling the method the spiral model; the tool is <code>murex</code>.</p>
+<h3 id="scope-rebranding-plus-a-neutral-state-path">Scope: rebranding plus a neutral state path</h3>
+<p>Three options were considered:</p>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Option</th>
+<th>Scope</th>
+<th>Verdict</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>A</td>
+<td>Crate and repo name only; keep <code>.ouroboros/</code> state</td>
+<td>Rejected - leaves the tool’s own data under another project’s directory</td>
+</tr>
+<tr class="even">
+<td>B</td>
+<td>Full harness independence; Ouroboros becomes one adapter</td>
+<td>Rejected for now - more change than the rename needs, and the Ouroboros integration currently works</td>
+</tr>
+<tr class="odd">
+<td>C</td>
+<td>Rename plus a neutral state path, Ouroboros integration retained</td>
+<td><strong>Chosen</strong></td>
+</tr>
+</tbody>
+</table>
+<p>C is the smallest change that removes the subordination without discarding working integration. It leaves B reachable later: once state lives under <code>.murex/</code>, adding a second harness adapter touches no existing data.</p>
+<h3 id="command-namespace-unified">Command namespace: unified</h3>
+<p>The plugin manifest’s <code>namespace</code> becomes <code>murex</code>, so the command is <code>ooo murex cycle</code> rather than <code>ooo spiral cycle</code>.</p>
+<p>The alternative - tool named <code>murex</code>, namespace kept as <code>spiral</code> - was rejected. Two names for one thing taxes every document, issue, and conversation with a parenthetical. Discoverability, the one real argument for keeping the self-describing <code>spiral</code>, is served by the skill instead: <code>SKILL.md</code> keeps “spiral-model” and “risk-driven” in its <code>description</code> frontmatter, which is what agents actually match against.</p>
+<h2 id="changes">Changes</h2>
+<table>
+<thead>
+<tr class="header">
+<th>Target</th>
+<th>Before</th>
+<th>After</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Crate, binary</td>
+<td><code>ouroboros-spiral</code></td>
+<td><code>murex</code></td>
+</tr>
+<tr class="even">
+<td>Library</td>
+<td><code>ouroboros_spiral</code></td>
+<td><code>murex</code></td>
+</tr>
+<tr class="odd">
+<td>Manifest <code>name</code>, <code>namespace</code></td>
+<td><code>spiral</code></td>
+<td><code>murex</code></td>
+</tr>
+<tr class="even">
+<td>Command usage strings</td>
+<td><code>ooo spiral &lt;cmd&gt;</code></td>
+<td><code>ooo murex &lt;cmd&gt;</code></td>
+</tr>
+<tr class="odd">
+<td>Skill directory</td>
+<td><code>skills/spiral/SKILL.md</code></td>
+<td><code>skills/murex/SKILL.md</code></td>
+</tr>
+<tr class="even">
+<td>Skill frontmatter <code>name</code></td>
+<td><code>spiral</code></td>
+<td><code>murex</code></td>
+</tr>
+<tr class="odd">
+<td>State path (<code>STATE_PATH</code>)</td>
+<td><code>.ouroboros/spiral.json</code></td>
+<td><code>.murex/spiral.json</code></td>
+</tr>
+<tr class="even">
+<td>Repository directory</td>
+<td><code>~/workspace/ouroboros-spiral</code></td>
+<td><code>~/workspace/murex</code></td>
+</tr>
+</tbody>
+</table>
+<p>The state file keeps the name <code>spiral.json</code>: the directory identifies the tool, the file identifies the artifact, which leaves room for <code>.murex/</code> to hold something else later without a second migration.</p>
+<p>Error and guidance strings embedded in the library (<code>load</code>, <code>open_cycle</code>, <code>commit</code>, and the <code>next</code> hints returned by <code>start</code> and <code>open_cycle</code>) quote the command form and must be updated in step with the namespace.</p>
+<h2 id="deliberately-unchanged">Deliberately unchanged</h2>
+<ul>
+<li><strong><code>ouroboros.plugin.json</code> filename.</strong> Dictated by the plugin contract, not by us. A host convention living under its own name is correct.</li>
+<li><strong>The Ouroboros manifest itself.</strong> Option C retains the integration.</li>
+<li><strong>On-disk JSON structure.</strong> Only the path moves; keys, types, and semantics are untouched.</li>
+<li><strong>No migration code.</strong> There are zero state files in real use. Writing a converter for a path nobody has written to would be the project’s first piece of debt. If a real spiral is ever stranded at <code>.ouroboros/spiral.json</code>, moving the file by hand is the whole migration.</li>
+</ul>
+<h2 id="verification">Verification</h2>
+<p>Unchanged behaviour is the acceptance criterion - the rename must be observable only in names.</p>
+<ol type="1">
+<li><code>cargo test</code> - the two existing tests pass (exposure ranking and the cycle gate; numeric id tie-break past ten).</li>
+<li><code>cargo clippy --all-targets -- -D warnings</code> - clean.</li>
+<li>Manifest validates against the Ouroboros core plugin schema 0.1.</li>
+<li>Release binary end-to-end: <code>start</code> → <code>risk add</code> → <code>cycle</code> → <code>commit</code> produces the same JSON as before the rename, with state at <code>.murex/spiral.json</code>.</li>
+<li><code>grep -ri ouroboros</code> over tracked files returns only the intended survivors: the <code>ouroboros.plugin.json</code> filename, the upstream repository URL, prose describing the Ouroboros integration, and this design document, which is a record of the rename and necessarily names the old owner.</li>
+</ol>
+<h2 id="sequencing">Sequencing</h2>
+<p>The repository directory rename must come last. The working session runs inside <code>.claude/worktrees/rust-port</code> beneath the repository, so moving the parent directory first would break the session’s working path.</p>
+<ol type="1">
+<li>Rename inside the repository (code, manifest, skill, docs).</li>
+<li>Run the verification set.</li>
+<li>Commit on the working branch.</li>
+<li>Landing the branch on <code>master</code> and removing the worktree is the maintainer’s call, not part of this change.</li>
+<li>Rename <code>~/workspace/ouroboros-spiral</code> to <code>~/workspace/murex</code>, after step 4, once no session is working beneath that directory.</li>
+</ol>
+<h2 id="out-of-scope">Out of scope</h2>
+<p>Publishing to crates.io. <code>murex</code> is available there as of 2026-08-11, which preserves the option, but distribution stays <code>cargo install --path .</code> until there is a reason to publish.</p>
+
+  </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<script>
+(function() {
+  const storageKey = 'oncoflow-html-theme';
+  const taskKeyPrefix = 'oncoflow-html-task:';
+
+  function applyTheme(theme) {
+    if (theme === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+    else document.documentElement.removeAttribute('data-theme');
+  }
+  const saved = localStorage.getItem(storageKey);
+  applyTheme(saved === 'dark' ? 'dark' : 'light');
+
+  document.getElementById('theme-toggle').addEventListener('click', () => {
+    const cur = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+    const next = cur === 'dark' ? 'light' : 'dark';
+    applyTheme(next);
+    localStorage.setItem(storageKey, next);
+    if (window.mermaid && typeof window.mermaid.initialize === 'function') {
+      window.mermaid.initialize({ startOnLoad: false, theme: next === 'dark' ? 'dark' : 'default' });
+      document.querySelectorAll('.mermaid').forEach((el, i) => {
+        if (el.dataset.src) el.innerHTML = el.dataset.src;
+        el.removeAttribute('data-processed');
+      });
+      window.mermaid.run({ querySelector: '.mermaid' });
+    }
+  });
+
+  // ---- Wrap each H2 + following siblings into <details class="section"> ----
+  const main = document.querySelector('main.content');
+  const headings = Array.from(main.querySelectorAll('h2'));
+  headings.forEach((h2, idx) => {
+    if (!h2.id) {
+      h2.id = 'sec-' + (idx + 1) + '-' + (h2.textContent || '').trim().toLowerCase().replace(/[^a-z0-9가-힣]+/g, '-').replace(/^-|-$/g, '');
+    }
+    const summary = document.createElement('summary');
+    summary.appendChild(h2.cloneNode(true));
+    const details = document.createElement('details');
+    details.className = 'section';
+    details.open = true;
+    details.appendChild(summary);
+    const body = document.createElement('div');
+    body.className = 'section-body';
+    let sibling = h2.nextElementSibling;
+    const toMove = [];
+    while (sibling && sibling.tagName !== 'H2') {
+      toMove.push(sibling);
+      sibling = sibling.nextElementSibling;
+    }
+    toMove.forEach(node => body.appendChild(node));
+    details.appendChild(body);
+    h2.parentNode.replaceChild(details, h2);
+  });
+
+  // ---- Interactive task checkboxes ----
+  const pageId = location.pathname.replace(/\W/g, '_');
+  Array.from(document.querySelectorAll('ul.task-list')).forEach(list => {
+    Array.from(list.querySelectorAll('li')).forEach((li, idx) => {
+      const cb = li.querySelector('input[type="checkbox"]');
+      if (!cb) return;
+      const key = taskKeyPrefix + pageId + ':' + (li.dataset.taskKey || idx);
+      cb.disabled = false;
+      const stored = localStorage.getItem(key);
+      if (stored === '1') {
+        cb.checked = true;
+        li.classList.add('checked');
+      }
+      cb.addEventListener('change', () => {
+        if (cb.checked) {
+          li.classList.add('checked');
+          localStorage.setItem(key, '1');
+        } else {
+          li.classList.remove('checked');
+          localStorage.removeItem(key);
+        }
+        updateProgress();
+      });
+    });
+  });
+
+  function updateProgress() {
+    const allCheckboxes = document.querySelectorAll('ul.task-list input[type="checkbox"]');
+    if (allCheckboxes.length === 0) return;
+    const done = Array.from(allCheckboxes).filter(c => c.checked).length;
+    const el = document.getElementById('task-progress');
+    el.hidden = false;
+    el.textContent = '진행 ' + done + ' / ' + allCheckboxes.length;
+  }
+  updateProgress();
+
+  // ---- Mermaid init ----
+  if (window.mermaid) {
+    Array.from(document.querySelectorAll('.mermaid')).forEach(el => {
+      el.dataset.src = el.innerHTML;
+    });
+    const initialTheme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'default';
+    window.mermaid.initialize({ startOnLoad: false, theme: initialTheme });
+    window.mermaid.run({ querySelector: '.mermaid' });
+  }
+})();
+</script>
+</body>
+</html>
