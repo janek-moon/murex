@@ -1,7 +1,11 @@
-# ouroboros-spiral
+# murex
 
 A Boehm spiral-model cycle controller, packaged as an [Ouroboros](https://github.com/Q00/ouroboros)
 UserLevel plugin. Rust, single binary.
+
+Named for the spiral-shelled sea snail that Tyrian purple was extracted from -
+you had to break the shell to get the dye, which is the bargain this tool makes
+explicit: you spend a cycle to learn what you cannot learn without spending it.
 
 ## Why
 
@@ -13,36 +17,36 @@ commitment review between cycles decides whether the next one earns its cost.
 That risk quadrant is the one thing Ouroboros does not have, so it is the only
 thing this plugin adds. It holds the register, ranks by exposure, picks what
 each cycle must de-risk, and gates the commitment review. It never executes
-work - `ooo spiral cycle` emits a spike brief you hand to `ooo auto` or
+work - `ooo murex cycle` emits a spike brief you hand to `ooo auto` or
 `ooo run`.
 
 ## Build and install
 
 ```bash
-cargo install --path .        # puts `ouroboros-spiral` on PATH
-ouroboros plugin add /path/to/ouroboros-spiral --plugin spiral
+cargo install --path .              # puts `murex` on PATH
+ouroboros plugin discover .         # inspect the manifest, writes nothing
+ouroboros plugin install .
 ```
 
 The manifest's entrypoint is the bare binary name, so the plugin resolves it
-from PATH. Until `ouroboros plugin add` ships in a release, run the binary
-directly - the argv and JSON output are identical either way:
+from PATH. The binary also runs standalone, with identical argv and JSON output:
 
 ```bash
-cargo run -- --root <target-repo> status
+murex --root <target-repo> status
 ```
 
 ## Use
 
 ```bash
-ooo spiral start "ship realtime collaborative editing"
-ooo spiral risk add "CRDT memory may exceed the 2GB box" --probability 0.6 --impact 0.9
-ooo spiral cycle                     # -> spike brief for the top-exposure risk
+ooo murex start "ship realtime collaborative editing"
+ooo murex risk add "CRDT memory may exceed the 2GB box" --probability 0.6 --impact 0.9
+ooo murex cycle                     # -> spike brief for the top-exposure risk
 # ... execute the brief through ooo auto / ooo run ...
-ooo spiral commit --decision continue --cost 1.5 --resolve R1 --evidence "380MB RSS"
-ooo spiral status                    # radius + remaining exposure
+ooo murex commit --decision continue --cost 1.5 --resolve R1 --evidence "380MB RSS"
+ooo murex status                    # radius + remaining exposure
 ```
 
-`skills/spiral/SKILL.md` is the agent-facing surface: it is what teaches Claude
+`skills/murex/SKILL.md` is the agent-facing surface: it is what teaches Claude
 Code, Codex, and the other runtimes when to reach for a spiral and how to drive
 one. The full walkthrough lives there.
 
@@ -53,11 +57,12 @@ one. The full walkthrough lives there.
 | `ouroboros.plugin.json`  | Plugin manifest (schema 0.1)                  |
 | `src/lib.rs`             | Controller logic - register, ranking, gate    |
 | `src/main.rs`            | CLI entrypoint; argv in, JSON out             |
-| `skills/spiral/SKILL.md` | In-agent surface for Claude Code / Codex      |
+| `skills/murex/SKILL.md`  | In-agent surface for Claude Code / Codex      |
 | `tests/spiral.rs`        | Self-check: `cargo test`                      |
 
-State is written to `.ouroboros/spiral.json` in the target repository. The
-format is plain JSON, so the register stays readable and diffable in review.
+The manifest keeps the filename `ouroboros.plugin.json` because the plugin
+contract dictates it. State is written to `.murex/spiral.json` in the target
+repository, as plain JSON, so the register stays readable and diffable in review.
 
 ## Scope
 
