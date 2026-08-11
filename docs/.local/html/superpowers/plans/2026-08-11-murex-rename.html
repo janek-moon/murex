@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>murex Rename Implementation Plan</title>
+<style>
+  :root {
+    --color-text: #1f2328;
+    --color-muted: #656d76;
+    --color-bg: #ffffff;
+    --color-surface: #f6f8fa;
+    --color-surface-alt: #ffffff;
+    --color-border: #d0d7de;
+    --color-link: #0969da;
+    --color-link-hover: #0550ae;
+    --color-code-bg: #f6f8fa;
+    --color-code-border: #d0d7de;
+    --color-high-bg: #fff1f0;
+    --color-high-border: #ffa39e;
+    --color-high-text: #cf1322;
+    --color-medium-bg: #fffbe6;
+    --color-medium-border: #ffe58f;
+    --color-medium-text: #d48806;
+    --color-low-bg: #f6ffed;
+    --color-low-border: #b7eb8f;
+    --color-low-text: #389e0d;
+    --color-info-bg: #e6f4ff;
+    --color-info-border: #91caff;
+    --color-info-text: #0958d9;
+    --color-toc-active: #0969da;
+    --color-toc-active-bg: #ddf4ff;
+    --color-checkbox-done: #d0d7de;
+  }
+  [data-theme="dark"] {
+    --color-text: #e6edf3;
+    --color-muted: #8b949e;
+    --color-bg: #0d1117;
+    --color-surface: #161b22;
+    --color-surface-alt: #161b22;
+    --color-border: #30363d;
+    --color-link: #58a6ff;
+    --color-link-hover: #79b8ff;
+    --color-code-bg: #161b22;
+    --color-code-border: #30363d;
+    --color-high-bg: #3a1518;
+    --color-high-border: #f85149;
+    --color-high-text: #ff7b72;
+    --color-medium-bg: #3a2e0a;
+    --color-medium-border: #d4a72c;
+    --color-medium-text: #e3b341;
+    --color-low-bg: #0f3025;
+    --color-low-border: #2ea043;
+    --color-low-text: #56d364;
+    --color-info-bg: #0d2d4d;
+    --color-info-border: #388bfd;
+    --color-info-text: #79b8ff;
+    --color-toc-active: #58a6ff;
+    --color-toc-active-bg: #1f2d3d;
+    --color-checkbox-done: #30363d;
+  }
+
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--color-bg);
+    color: var(--color-text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Apple SD Gothic Neo",
+      "Noto Sans KR", Roboto, sans-serif;
+    line-height: 1.65; font-size: 15px;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+
+  .layout {
+    max-width: 960px;
+    margin: 24px auto 96px;
+    padding: 0 32px;
+  }
+  main.content { min-width: 0; }
+
+  header.page-header {
+    border-bottom: 1px solid var(--color-border);
+    padding-bottom: 24px;
+    margin-bottom: 32px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  header.page-header h1 {
+    margin: 0 0 8px;
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+  header.page-header .meta {
+    color: var(--color-muted);
+    font-size: 14px;
+  }
+  header.page-header .meta span + span::before {
+    content: "·"; margin: 0 8px; color: var(--color-border);
+  }
+  .header-tools { display: flex; gap: 8px; align-items: center; }
+  .theme-toggle {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    color: var(--color-text);
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    font-family: inherit;
+    transition: background 0.1s ease;
+  }
+  .theme-toggle:hover { background: var(--color-code-bg); }
+  .progress {
+    font-size: 12px;
+    color: var(--color-muted);
+    padding: 4px 10px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+  }
+
+  details.section {
+    margin: 24px 0;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    background: var(--color-surface-alt);
+    overflow: hidden;
+  }
+  details.section > summary {
+    cursor: pointer;
+    padding: 14px 18px;
+    font-weight: 600;
+    font-size: 18px;
+    list-style: none;
+    user-select: none;
+    background: var(--color-surface);
+    border-bottom: 1px solid transparent;
+    transition: border-color 0.1s ease;
+  }
+  details.section[open] > summary { border-bottom-color: var(--color-border); }
+  details.section > summary::-webkit-details-marker { display: none; }
+  details.section > summary::before {
+    content: "▸";
+    display: inline-block;
+    margin-right: 8px;
+    color: var(--color-muted);
+    transition: transform 0.15s ease;
+  }
+  details.section[open] > summary::before { transform: rotate(90deg); }
+  details.section > .section-body { padding: 4px 24px 20px; }
+
+  h2 { margin: 0; font-size: 20px; font-weight: 600; display: inline; }
+  h3 { margin: 28px 0 10px; font-size: 16px; font-weight: 600; }
+  h4 { margin: 18px 0 6px; font-size: 14px; font-weight: 600; color: var(--color-muted); }
+  p { margin: 10px 0; }
+
+  a { color: var(--color-link); text-decoration: none; }
+  a:hover { color: var(--color-link-hover); text-decoration: underline; }
+
+  code {
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 13px;
+    background: var(--color-code-bg);
+    padding: 2px 6px;
+    border-radius: 4px;
+    border: 1px solid var(--color-code-border);
+  }
+  pre {
+    background: var(--color-code-bg);
+    border: 1px solid var(--color-code-border);
+    border-radius: 6px;
+    padding: 14px 16px;
+    overflow-x: auto;
+    font-size: 13px;
+    line-height: 1.55;
+  }
+  pre code {
+    background: transparent;
+    padding: 0;
+    border: none;
+    font-size: inherit;
+  }
+
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 16px 0;
+    font-size: 14px;
+  }
+  th, td {
+    border: 1px solid var(--color-border);
+    padding: 8px 12px;
+    text-align: left;
+    vertical-align: top;
+  }
+  th {
+    background: var(--color-surface);
+    font-weight: 600;
+  }
+
+  blockquote {
+    margin: 16px 0;
+    padding: 12px 16px;
+    border-left: 4px solid var(--color-border);
+    background: var(--color-surface);
+    color: var(--color-muted);
+  }
+
+  ul, ol { padding-left: 24px; margin: 10px 0; }
+  li { margin: 4px 0; }
+
+  ul.task-list { list-style: none; padding-left: 4px; }
+  ul.task-list > li { padding-left: 0; }
+  ul.task-list input[type="checkbox"] {
+    margin-right: 8px;
+    cursor: pointer;
+    transform: translateY(1px);
+  }
+  ul.task-list li.checked > span.task-text {
+    color: var(--color-muted);
+    text-decoration: line-through;
+  }
+
+  .badge {
+    display: inline-block;
+    padding: 1px 8px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    border: 1px solid transparent;
+    vertical-align: middle;
+  }
+  .badge-high   { background: var(--color-high-bg);   border-color: var(--color-high-border);   color: var(--color-high-text); }
+  .badge-medium { background: var(--color-medium-bg); border-color: var(--color-medium-border); color: var(--color-medium-text); }
+  .badge-low    { background: var(--color-low-bg);    border-color: var(--color-low-border);    color: var(--color-low-text); }
+  .badge-info   { background: var(--color-info-bg);   border-color: var(--color-info-border);   color: var(--color-info-text); }
+
+  .callout {
+    margin: 18px 0;
+    padding: 14px 16px;
+    border-radius: 6px;
+    border: 1px solid;
+  }
+  .callout-info   { background: var(--color-info-bg);   border-color: var(--color-info-border);   color: var(--color-info-text); }
+  .callout-warn   { background: var(--color-medium-bg); border-color: var(--color-medium-border); color: var(--color-medium-text); }
+  .callout-danger { background: var(--color-high-bg);   border-color: var(--color-high-border);   color: var(--color-high-text); }
+
+  .mermaid {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    padding: 16px;
+    margin: 18px 0;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+<div class="layout">
+  <main class="content">
+    <header class="page-header">
+      <div>
+        <h1 id="page-title">murex Rename Implementation Plan</h1>
+        <div class="meta">
+          <span><!-- META_LEFT --></span>
+          <span><!-- META_RIGHT --></span>
+        </div>
+      </div>
+      <div class="header-tools">
+        <span class="progress" id="task-progress" hidden></span>
+        <button class="theme-toggle" id="theme-toggle" type="button">🌓 테마</button>
+      </div>
+    </header>
+
+    <h1 id="murex-rename-implementation-plan">murex Rename Implementation Plan</h1>
+<blockquote>
+<p><strong>For agentic workers:</strong> REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (<code>- [ ]</code>) syntax for tracking.</p>
+</blockquote>
+<p><strong>Goal:</strong> Rename <code>ouroboros-spiral</code> to <code>murex</code> and move its state out of the host’s directory, so the tool stops reading as an Ouroboros accessory.</p>
+<p><strong>Architecture:</strong> Pure rename. Four surfaces change independently — the Rust crate, the plugin manifest, the skill, and the README — and each is verified on its own. Behaviour is the invariant: the same commands must produce the same JSON, only under new names and at <code>.murex/spiral.json</code>.</p>
+<p><strong>Tech Stack:</strong> Rust 2021 (chrono, clap, serde, serde_json; tempfile for tests), Ouroboros UserLevel plugin manifest schema 0.1.</p>
+<p><strong>Spec:</strong> <code>docs/superpowers/specs/2026-08-11-rename-design.md</code></p>
+<h2 id="global-constraints">Global Constraints</h2>
+<ul>
+<li>Behaviour must be observable only in names. Same inputs produce the same JSON output.</li>
+<li>On-disk JSON structure is untouched: keys, types, and semantics stay identical. Only the path moves.</li>
+<li>No migration code from <code>.ouroboros/spiral.json</code>. Zero state files exist in real use.</li>
+<li>The <code>ouroboros.plugin.json</code> <strong>filename</strong> does not change — it is dictated by the plugin contract.</li>
+<li>The Ouroboros integration is retained. This is a rename, not a decoupling.</li>
+<li>The manifest must validate against Ouroboros core plugin schema <code>0.1</code>.</li>
+<li><code>skills/murex/SKILL.md</code> frontmatter <code>description</code> must keep the words <code>spiral-model</code> and <code>risk-driven</code> — that field is the agent’s discovery surface, and it is what replaces the self-describing <code>spiral</code> namespace.</li>
+<li><code>spiral</code> survives as domain vocabulary in prose and in the state filename. It is removed only from names the user types and names the toolchain resolves.</li>
+<li>Do not publish to crates.io.</li>
+<li>The repository directory rename happens after the branch lands, and is not part of Tasks 1-4.</li>
+</ul>
+<hr />
+<h3 id="task-1-rename-the-crate-and-neutralize-the-state-path">Task 1: Rename the crate and neutralize the state path</h3>
+<p><strong>Files:</strong> - Modify: <code>Cargo.toml</code> - Modify: <code>src/lib.rs</code> - Modify: <code>src/main.rs</code> - Test: <code>tests/spiral.rs</code></p>
+<p><strong>Interfaces:</strong> - Consumes: nothing — this is the first task. - Produces: crate <code>murex</code>, providing both the library <code>murex</code> and the binary <code>murex</code>. Public API is unchanged in every signature: <code>start</code>, <code>add_risk</code>, <code>close_risk</code>, <code>list_risks</code>, <code>open_cycle</code>, <code>commit</code>, <code>stop</code>, <code>status</code>, <code>load</code>, <code>save</code>, <code>ranked_open_risks</code>, <code>exposure</code>, plus the types <code>Risk</code>, <code>Cycle</code>, <code>Spiral</code>, <code>SpiralError</code>, <code>Result&lt;T&gt;</code> and the constants <code>STATE_PATH</code>, <code>DECISIONS</code>, <code>OPEN_STATES</code>. Only <code>STATE_PATH</code>’s <strong>value</strong> changes, to <code>".murex/spiral.json"</code>. Tasks 2-4 depend on the binary being named <code>murex</code> and on that constant.</p>
+<ul class="task-list">
+<li><input type="checkbox" disabled="" />
+<strong>Step 1: Write the failing test</strong></li>
+</ul>
+<p>In <code>tests/spiral.rs</code>, change the import on line 5 from <code>use ouroboros_spiral as sp;</code> to:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode rust"><code class="sourceCode rust"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">use</span> murex <span class="kw">as</span> sp<span class="op">;</span></span></code></pre></div>
+<p>Then append this test to the end of the file:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode rust"><code class="sourceCode rust"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="at">#[</span>test<span class="at">]</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="kw">fn</span> state_lands_under_the_tool_directory() <span class="op">{</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    <span class="kw">let</span> tmp <span class="op">=</span> <span class="pp">TempDir::</span>new()<span class="op">.</span>expect(<span class="st">&quot;temp dir&quot;</span>)<span class="op">;</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>    <span class="kw">let</span> root <span class="op">=</span> tmp<span class="op">.</span>path()<span class="op">;</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>    <span class="pp">sp::</span>start(root<span class="op">,</span> <span class="st">&quot;path check&quot;</span><span class="op">,</span> <span class="pp">vec!</span>[]<span class="op">,</span> <span class="pp">vec!</span>[])<span class="op">.</span>expect(<span class="st">&quot;start&quot;</span>)<span class="op">;</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>    <span class="pp">assert_eq!</span>(<span class="pp">sp::</span>STATE_PATH<span class="op">,</span> <span class="st">&quot;.murex/spiral.json&quot;</span>)<span class="op">;</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>    <span class="pp">assert!</span>(root<span class="op">.</span>join(<span class="st">&quot;.murex/spiral.json&quot;</span>)<span class="op">.</span>exists())<span class="op">;</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>    <span class="co">// The host&#39;s directory is no longer ours to write into.</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>    <span class="pp">assert!</span>(<span class="op">!</span>root<span class="op">.</span>join(<span class="st">&quot;.ouroboros&quot;</span>)<span class="op">.</span>exists())<span class="op">;</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<ul class="task-list">
+<li><input type="checkbox" disabled="" />
+<strong>Step 2: Run the test to verify it fails</strong></li>
+</ul>
+<p>Run: <code>cargo test</code> Expected: FAIL to compile, with <code>error[E0432]: unresolved import</code> or <code>use of undeclared crate or module 'murex'</code>. The crate is still named <code>ouroboros_spiral</code>.</p>
+<ul class="task-list">
+<li><input type="checkbox" disabled="" />
+<strong>Step 3: Rename the package in <code>Cargo.toml</code></strong></li>
+</ul>
+<p>Replace the whole file with:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode toml"><code class="sourceCode toml"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[</span><span class="dt">package</span><span class="kw">]</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="dt">name</span> <span class="op">=</span> <span class="st">&quot;murex&quot;</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="dt">version</span> <span class="op">=</span> <span class="st">&quot;0.1.0&quot;</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="dt">edition</span> <span class="op">=</span> <span class="st">&quot;2021&quot;</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="dt">description</span> <span class="op">=</span> <span class="st">&quot;Boehm spiral-model cycle controller for Ouroboros&quot;</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="dt">license</span> <span class="op">=</span> <span class="st">&quot;MIT&quot;</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="kw">[</span><span class="dt">dependencies</span><span class="kw">]</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="dt">chrono</span> <span class="op">=</span> <span class="op">{ </span><span class="dt">version</span><span class="op"> =</span> <span class="st">&quot;0.4&quot;</span><span class="op">, </span><span class="dt">default-features</span><span class="op"> =</span> <span class="cn">false</span><span class="op">, </span><span class="dt">features</span><span class="op"> =</span> <span class="op">[</span><span class="st">&quot;clock&quot;</span><span class="op">,</span> <span class="st">&quot;std&quot;</span><span class="op">]</span> <span class="op">}</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a><span class="dt">clap</span> <span class="op">=</span> <span class="op">{ </span><span class="dt">version</span><span class="op"> =</span> <span class="st">&quot;4&quot;</span><span class="op">, </span><span class="dt">features</span><span class="op"> =</span> <span class="op">[</span><span class="st">&quot;derive&quot;</span><span class="op">]</span> <span class="op">}</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a><span class="dt">serde</span> <span class="op">=</span> <span class="op">{ </span><span class="dt">version</span><span class="op"> =</span> <span class="st">&quot;1&quot;</span><span class="op">, </span><span class="dt">features</span><span class="op"> =</span> <span class="op">[</span><span class="st">&quot;derive&quot;</span><span class="op">]</span> <span class="op">}</span></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a><span class="dt">serde_json</span> <span class="op">=</span> <span class="st">&quot;1&quot;</span></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a><span class="kw">[</span><span class="dt">dev-dependencies</span><span class="kw">]</span></span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a><span class="dt">tempfile</span> <span class="op">=</span> <span class="st">&quot;3&quot;</span></span></code></pre></div>
+<p>The <code>[lib]</code> and <code>[bin]</code> sections are deleted on purpose. They existed only to give the targets names that differed from the package name. Now that all three are <code>murex</code>, Cargo derives the library and the binary from <code>package.name</code> plus the presence of <code>src/lib.rs</code> and <code>src/main.rs</code>. Keeping them would be two more places to edit at the next rename.</p>
+<ul class="task-list">
+<li><input type="checkbox" disabled="" />
+<strong>Step 4: Update <code>src/lib.rs</code></strong></li>
+</ul>
+<p>One constant and seven operator-facing strings. Each <code>ooo spiral</code> becomes <code>ooo murex</code>; the state path loses the host’s directory.</p>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>Location</th>
+<th>Before</th>
+<th>After</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>STATE_PATH</code> const</td>
+<td><code>".ouroboros/spiral.json"</code></td>
+<td><code>".murex/spiral.json"</code></td>
+</tr>
+<tr class="even">
+<td><code>load</code>, not-found error</td>
+<td><code>run `ooo spiral start \"&lt;objective&gt;\"` first</code></td>
+<td><code>run `ooo murex start \"&lt;objective&gt;\"` first</code></td>
+</tr>
+<tr class="odd">
+<td><code>start</code>, already-exists error</td>
+<td><code>see `ooo spiral status`</code></td>
+<td><code>see `ooo murex status`</code></td>
+</tr>
+<tr class="even">
+<td><code>start</code>, returned <code>next</code></td>
+<td><code>ooo spiral risk add "&lt;risk&gt;" ...</code></td>
+<td><code>ooo murex risk add "&lt;risk&gt;" ...</code></td>
+</tr>
+<tr class="odd">
+<td><code>open_cycle</code>, pending-cycle error</td>
+<td><code>close it with `ooo spiral commit --decision ...`</code></td>
+<td><code>close it with `ooo murex commit --decision ...`</code></td>
+</tr>
+<tr class="even">
+<td><code>open_cycle</code>, no-risks error</td>
+<td><code>with `ooo spiral risk add`, or ... `ooo spiral stop`</code></td>
+<td><code>with `ooo murex risk add`, or ... `ooo murex stop`</code></td>
+</tr>
+<tr class="odd">
+<td><code>open_cycle</code>, returned <code>next</code></td>
+<td><code>then `ooo spiral commit ... --resolve {top_id}`</code></td>
+<td><code>then `ooo murex commit ... --resolve {top_id}`</code></td>
+</tr>
+<tr class="even">
+<td><code>commit</code>, no-open-cycle error</td>
+<td><code>start one with `ooo spiral cycle`</code></td>
+<td><code>start one with `ooo murex cycle`</code></td>
+</tr>
+</tbody>
+</table>
+<p>Leave the module doc comment’s references to <code>ooo auto</code>, <code>ooo run</code>, and <code>ooo evolve</code> alone — those are Ouroboros core commands, not ours. Leave the word “spiral” in prose and in the <code>spiral.json</code> filename.</p>
+<ul class="task-list">
+<li><input type="checkbox" disabled="" />
+<strong>Step 5: Update <code>src/main.rs</code></strong></li>
+</ul>
+<p>Three changes:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode rust"><code class="sourceCode rust"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co">// 1. the import</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="kw">use</span> murex <span class="kw">as</span> spiral<span class="op">;</span></span></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode rust"><code class="sourceCode rust"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co">// 2. the clap program name</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="at">#[</span>command<span class="at">(</span>name <span class="op">=</span> <span class="st">&quot;ooo murex&quot;</span><span class="op">,</span> about <span class="op">=</span> <span class="st">&quot;Risk-driven spiral-model cycles.&quot;</span><span class="at">)]</span></span></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode rust"><code class="sourceCode rust"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>    <span class="co">/// Repository root holding .murex/spiral.json.</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>    <span class="at">#[</span>arg<span class="at">(</span>long<span class="op">,</span> global <span class="op">=</span> <span class="cn">true</span><span class="op">,</span> default_value <span class="op">=</span> <span class="st">&quot;.&quot;</span><span class="at">)]</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>    root<span class="op">:</span> <span class="dt">PathBuf</span><span class="op">,</span></span></code></pre></div>
+<ul class="task-list">
+<li><input type="checkbox" disabled="" />
+<strong>Step 6: Verify no stale names remain in the crate</strong></li>
+</ul>
+<p>Run: <code>grep -rn "ooo spiral\|ouroboros_spiral\|\.ouroboros/" src/ tests/ Cargo.toml</code> Expected: no output. If anything matches, fix it and re-run before continuing.</p>
+<ul class="task-list">
+<li><input type="checkbox" disabled="" />
+<strong>Step 7: Run the tests to verify they pass</strong></li>
+</ul>
+<p>Run: <code>cargo test</code> Expected: PASS — three tests in <code>tests/spiral.rs</code> (<code>spiral_drives_cycles_by_risk_exposure</code>, <code>risk_ids_rank_numerically_past_ten</code>, <code>state_lands_under_the_tool_directory</code>).</p>
+<ul class="task-list">
+<li><input type="checkbox" disabled="" />
+<strong>Step 8: Run clippy</strong></li>
+</ul>
+<p>Run: <code>cargo clippy --all-targets -- -D warnings</code> Expected: <code>Finished</code> with no warnings.</p>
+<ul class="task-list">
+<li><input type="checkbox" disabled="" />
+<strong>Step 9: Commit</strong></li>
+</ul>
+<div class="sourceCode" id="cb7"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> add Cargo.toml Cargo.lock src/lib.rs src/main.rs tests/spiral.rs</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> commit <span class="at">-m</span> <span class="st">&quot;Rename crate to murex and move state to .murex/</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="st">The risk register and the commitment gate never depended on Ouroboros, so</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="st">the tool stops living under the host&#39;s name and the host&#39;s directory.</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="st">Behaviour and the on-disk JSON structure are unchanged; only STATE_PATH and</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="st">the command strings move.&quot;</span></span></code></pre></div>
+<hr />
+<h3 id="task-2-rename-the-plugin-manifest-surface">Task 2: Rename the plugin manifest surface</h3>
+<p><strong>Files:</strong> - Modify: <code>ouroboros.plugin.json</code></p>
+<p><strong>Interfaces:</strong> - Consumes: the binary <code>murex</code> from Task 1, which becomes the manifest’s <code>entrypoint.command</code>. - Produces: a manifest declaring <code>name: "murex"</code> and namespace <code>murex</code> across all six commands, so the invocation is <code>ooo murex &lt;cmd&gt;</code>. Tasks 3 and 4 document that invocation.</p>
+<ul class="task-list">
+<li><input type="checkbox" disabled="" />
+<strong>Step 1: Confirm the manifest still carries the old names</strong></li>
+</ul>
+<p>Run: <code>grep -c '"namespace": "spiral"' ouroboros.plugin.json</code> Expected: <code>6</code> — one per command. This is the baseline the next step removes.</p>
+<ul class="task-list">
+<li><input type="checkbox" disabled="" />
+<strong>Step 2: Edit the manifest</strong></li>
+</ul>
+<p>The filename stays <code>ouroboros.plugin.json</code>. Inside it, change:</p>
+<ol type="1">
+<li>Top-level <code>"name": "spiral"</code> → <code>"name": "murex"</code>.</li>
+<li>All six <code>"namespace": "spiral"</code> → <code>"namespace": "murex"</code>.</li>
+<li>Every <code>usage</code> string, replacing <code>ooo spiral</code> with <code>ooo murex</code>:</li>
+</ol>
+<pre><code>ooo murex start &quot;&lt;objective&gt;&quot; [--constraint &lt;text&gt;] [--alternative &lt;text&gt;]
+ooo murex risk add &quot;&lt;risk&gt;&quot; --probability 0.7 --impact 0.9 | ooo murex risk list | ooo murex risk close &lt;id&gt;
+ooo murex cycle [--objective &lt;text&gt;]
+ooo murex commit --decision &lt;continue|pivot|stop&gt; [--cost &lt;n&gt;] [--resolve &lt;risk-id&gt;]
+ooo murex stop [--reason &lt;text&gt;]
+ooo murex status</code></pre>
+<ol start="4" type="1">
+<li><code>"entrypoint"</code>:</li>
+</ol>
+<div class="sourceCode" id="cb9"><pre class="sourceCode json"><code class="sourceCode json"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>  <span class="er">&quot;entrypoint&quot;:</span> <span class="fu">{</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;type&quot;</span><span class="fu">:</span> <span class="st">&quot;command&quot;</span><span class="fu">,</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">&quot;command&quot;</span><span class="fu">:</span> <span class="st">&quot;murex&quot;</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">}</span></span></code></pre></div>
+<ol start="5" type="1">
+<li>The <code>state</code> capability <code>reason</code>, which names the file:</li>
+</ol>
+<div class="sourceCode" id="cb10"><pre class="sourceCode json"><code class="sourceCode json"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>    <span class="fu">{</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>      <span class="dt">&quot;name&quot;</span><span class="fu">:</span> <span class="st">&quot;state&quot;</span><span class="fu">,</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>      <span class="dt">&quot;access&quot;</span><span class="fu">:</span> <span class="st">&quot;write&quot;</span><span class="fu">,</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>      <span class="dt">&quot;reason&quot;</span><span class="fu">:</span> <span class="st">&quot;Persist the risk register and cycle history in .murex/spiral.json.&quot;</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">}</span></span></code></pre></div>
+<p>Leave the top-level <code>description</code> as it is — it says “Boehm spiral-model cycle controller”, which is domain vocabulary, not a name.</p>
+<ul class="task-list">
+<li><input type="checkbox" disabled="" />
+<strong>Step 3: Validate against the Ouroboros core schema</strong></li>
+</ul>
+<div class="sourceCode" id="cb11"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="ex">python3</span> <span class="at">-</span> <span class="op">&lt;&lt;&#39;PY&#39;</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="st">import json, urllib.request</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="st">url = (&quot;https://raw.githubusercontent.com/Q00/ouroboros/main/&quot;</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="st">       &quot;src/ouroboros/plugin/schemas/0.1/plugin.schema.json&quot;)</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a><span class="st">schema = json.load(urllib.request.urlopen(url))</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a><span class="st">manifest = json.load(open(&quot;ouroboros.plugin.json&quot;))</span></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a><span class="st">import jsonschema</span></span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a><span class="st">jsonschema.validate(manifest, schema)</span></span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a><span class="st">print(&quot;VALID; name =&quot;, manifest[&quot;name&quot;],</span></span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a><span class="st">      &quot;| namespace =&quot;, manifest[&quot;commands&quot;][0][&quot;namespace&quot;],</span></span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a><span class="st">      &quot;| entrypoint =&quot;, manifest[&quot;entrypoint&quot;][&quot;command&quot;])</span></span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a><span class="op">PY</span></span></code></pre></div>
+<p>Expected: <code>VALID; name = murex | namespace = murex | entrypoint = murex</code></p>
+<ul class="task-list">
+<li><input type="checkbox" disabled="" />
+<strong>Step 4: Have the real loader read it</strong></li>
+</ul>
+<p><code>discover</code> inspects a manifest without writing a lockfile or a trust store, so it is safe to run against the live install.</p>
+<p>Run: <code>uvx --from ouroboros-ai ouroboros plugin discover .</code> Expected: it reports the plugin as <code>murex</code> with six commands under the <code>murex</code> namespace, and exits 0.</p>
+<p>If it exits non-zero, read the error before changing anything — a schema-valid manifest that the loader rejects means the loader enforces something the schema does not, and that constraint belongs in this plan, not in a guess.</p>
+<ul class="task-list">
+<li><input type="checkbox" disabled="" />
+<strong>Step 5: Commit</strong></li>
+</ul>
+<div class="sourceCode" id="cb12"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> add ouroboros.plugin.json</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> commit <span class="at">-m</span> <span class="st">&quot;Rename the plugin manifest surface to murex</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="st">Namespace unifies to </span><span class="dt">\`</span><span class="st">ooo murex &lt;cmd&gt;</span><span class="dt">\`</span><span class="st">. Carrying two names for one tool</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a><span class="st">taxes every document and conversation with a parenthetical; discoverability</span></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a><span class="st">moves to the skill description, which is what agents match on.</span></span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a><span class="st">The ouroboros.plugin.json filename stays - it is the host&#39;s contract.&quot;</span></span></code></pre></div>
+<hr />
+<h3 id="task-3-rename-the-skill">Task 3: Rename the skill</h3>
+<p><strong>Files:</strong> - Move: <code>skills/spiral/SKILL.md</code> → <code>skills/murex/SKILL.md</code> - Modify: <code>skills/murex/SKILL.md</code></p>
+<p><strong>Interfaces:</strong> - Consumes: the <code>ooo murex &lt;cmd&gt;</code> invocation established in Task 2. - Produces: the agent-facing surface. This is what Claude Code and Codex match against and read; nothing else depends on it.</p>
+<ul class="task-list">
+<li><input type="checkbox" disabled="" />
+<strong>Step 1: Move the directory under version control</strong></li>
+</ul>
+<div class="sourceCode" id="cb13"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> mv skills/spiral skills/murex</span></code></pre></div>
+<ul class="task-list">
+<li><input type="checkbox" disabled="" />
+<strong>Step 2: Update the frontmatter and the title</strong></li>
+</ul>
+<p>The <code>name</code> must match the manifest namespace. The <code>description</code> must not lose <code>spiral-model</code> or <code>risk-driven</code> — with the namespace no longer self-describing, this field is the entire discovery surface.</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode markdown"><code class="sourceCode markdown"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="co">---</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="an">name:</span><span class="co"> murex</span></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a><span class="an">description:</span><span class="co"> &quot;Run risk-driven spiral-model cycles: register risks, de-risk the largest one per cycle, gate on a commitment review&quot;</span></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a><span class="co">---</span></span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a><span class="fu"># ooo murex - Risk-Driven Spiral Cycles</span></span></code></pre></div>
+<ul class="task-list">
+<li><input type="checkbox" disabled="" />
+<strong>Step 3: Update every command example in the body</strong></li>
+</ul>
+<p>Replace <code>ooo spiral</code> with <code>ooo murex</code> throughout, and the state path in the Notes section:</p>
+<div class="sourceCode" id="cb15"><pre class="sourceCode markdown"><code class="sourceCode markdown"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>State lives in <span class="in">`.murex/spiral.json`</span>; commit it to share the register.</span></code></pre></div>
+<p>Leave every other use of the word “spiral” — “the spiral model”, “a spiral with no risks is just a slower waterfall”, “the spiral converges” — untouched. Those name the method, not the tool.</p>
+<ul class="task-list">
+<li><input type="checkbox" disabled="" />
+<strong>Step 4: Verify no stale invocation remains</strong></li>
+</ul>
+<p>Run: <code>grep -rn "ooo spiral\|\.ouroboros/" skills/</code> Expected: no output.</p>
+<p>Run: <code>grep -c "spiral-model\|risk-driven" skills/murex/SKILL.md</code> Expected: at least <code>1</code> — the constraint on the description field is still met.</p>
+<ul class="task-list">
+<li><input type="checkbox" disabled="" />
+<strong>Step 5: Commit</strong></li>
+</ul>
+<div class="sourceCode" id="cb16"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> add skills/</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> commit <span class="at">-m</span> <span class="st">&quot;Rename the skill to murex</span></span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a><span class="st">The description keeps &#39;spiral-model&#39; and &#39;risk-driven&#39;: with the namespace</span></span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a><span class="st">no longer self-describing, that field is the whole discovery surface.&quot;</span></span></code></pre></div>
+<hr />
+<h3 id="task-4-update-the-readme-and-correct-the-plugin-install-claim">Task 4: Update the README and correct the plugin-install claim</h3>
+<p><strong>Files:</strong> - Modify: <code>README.md</code></p>
+<p><strong>Interfaces:</strong> - Consumes: the binary name from Task 1, the namespace from Task 2, the skill path from Task 3. - Produces: nothing other tasks read.</p>
+<p>The README currently states that <code>ouroboros plugin add</code> has not shipped in a release. <strong>That is false</strong> — the released <code>ouroboros-ai</code> CLI has a full <code>plugin</code> command group (<code>add</code>, <code>install</code>, <code>trust</code>, <code>discover</code>, <code>list</code>, <code>inspect</code>, <code>disable</code>, <code>remove</code>). The claim came from a truncated reading of <code>ouroboros --help</code>. Removing it is part of this task, not a separate concern, because the same paragraph is being rewritten for the rename.</p>
+<ul class="task-list">
+<li><input type="checkbox" disabled="" />
+<strong>Step 1: Replace <code>README.md</code></strong></li>
+</ul>
+<pre class="markdown"><code># murex
+
+A Boehm spiral-model cycle controller, packaged as an [Ouroboros](https://github.com/Q00/ouroboros)
+UserLevel plugin. Rust, single binary.
+
+Named for the spiral-shelled sea snail that Tyrian purple was extracted from -
+you had to break the shell to get the dye, which is the bargain this tool makes
+explicit: you spend a cycle to learn what you cannot learn without spending it.
+
+## Why
+
+Ouroboros already drives execution and iteration. Its `evolve` loop is
+**quality-driven**: it regenerates until an evaluation gate passes. The spiral
+model is **risk-driven**: each cycle exists to retire the largest risk, and a
+commitment review between cycles decides whether the next one earns its cost.
+
+That risk quadrant is the one thing Ouroboros does not have, so it is the only
+thing this plugin adds. It holds the register, ranks by exposure, picks what
+each cycle must de-risk, and gates the commitment review. It never executes
+work - `ooo murex cycle` emits a spike brief you hand to `ooo auto` or
+`ooo run`.
+
+## Build and install
+
+```bash
+cargo install --path .              # puts `murex` on PATH
+ouroboros plugin discover .         # inspect the manifest, writes nothing
+ouroboros plugin add . --plugin murex</code></pre>
+<p>The manifest’s entrypoint is the bare binary name, so the plugin resolves it from PATH. The binary also runs standalone, with identical argv and JSON output:</p>
+<div class="sourceCode" id="cb18"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="ex">murex</span> <span class="at">--root</span> <span class="op">&lt;</span>target-repo<span class="op">&gt;</span> status</span></code></pre></div>
+<h2 id="use">Use</h2>
+<div class="sourceCode" id="cb19"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="ex">ooo</span> murex start <span class="st">&quot;ship realtime collaborative editing&quot;</span></span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a><span class="ex">ooo</span> murex risk add <span class="st">&quot;CRDT memory may exceed the 2GB box&quot;</span> <span class="at">--probability</span> 0.6 <span class="at">--impact</span> 0.9</span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a><span class="ex">ooo</span> murex cycle                     <span class="co"># -&gt; spike brief for the top-exposure risk</span></span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a><span class="co"># ... execute the brief through ooo auto / ooo run ...</span></span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a><span class="ex">ooo</span> murex commit <span class="at">--decision</span> continue <span class="at">--cost</span> 1.5 <span class="at">--resolve</span> R1 <span class="at">--evidence</span> <span class="st">&quot;380MB RSS&quot;</span></span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a><span class="ex">ooo</span> murex status                    <span class="co"># radius + remaining exposure</span></span></code></pre></div>
+<p><code>skills/murex/SKILL.md</code> is the agent-facing surface: it is what teaches Claude Code, Codex, and the other runtimes when to reach for a spiral and how to drive one. The full walkthrough lives there.</p>
+<h2 id="layout">Layout</h2>
+<table>
+<thead>
+<tr class="header">
+<th>Path</th>
+<th>Role</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>ouroboros.plugin.json</code></td>
+<td>Plugin manifest (schema 0.1)</td>
+</tr>
+<tr class="even">
+<td><code>src/lib.rs</code></td>
+<td>Controller logic - register, ranking, gate</td>
+</tr>
+<tr class="odd">
+<td><code>src/main.rs</code></td>
+<td>CLI entrypoint; argv in, JSON out</td>
+</tr>
+<tr class="even">
+<td><code>skills/murex/SKILL.md</code></td>
+<td>In-agent surface for Claude Code / Codex</td>
+</tr>
+<tr class="odd">
+<td><code>tests/spiral.rs</code></td>
+<td>Self-check: <code>cargo test</code></td>
+</tr>
+</tbody>
+</table>
+<p>The manifest keeps the filename <code>ouroboros.plugin.json</code> because the plugin contract dictates it. State is written to <code>.murex/spiral.json</code> in the target repository, as plain JSON, so the register stays readable and diffable in review.</p>
+<h2 id="scope">Scope</h2>
+<p>Risk scoring is human judgement, entered through <code>risk add</code>. The plugin does not call a model to guess probabilities - it is the deterministic bookkeeping and the gate, so that whatever the agent claims about a risk stays auditable against the evidence recorded when the risk was closed.</p>
+<p>MIT.</p>
+<pre><code>
+- [ ] **Step 2: Verify the install path the README now promises**
+
+Install into a sandbox so the live `~/.ouroboros` is untouched:
+
+```bash
+SANDBOX=$(mktemp -d)
+uvx --from ouroboros-ai ouroboros plugin add . --plugin murex \
+  --plugin-home-root &quot;$SANDBOX/plugins&quot; \
+  --lockfile &quot;$SANDBOX/lock.json&quot; \
+  --trust-root &quot;$SANDBOX/trust&quot;
+echo &quot;exit=$?&quot;</code></pre>
+<p>Expected: exit 0, and <code>$SANDBOX/lock.json</code> contains an entry named <code>murex</code>.</p>
+<p>If it fails because the repository has no plugin catalog (<code>--plugin</code> is documented as “name of a plugin in the repo catalog”), try the single-manifest form instead:</p>
+<div class="sourceCode" id="cb21"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="ex">uvx</span> <span class="at">--from</span> ouroboros-ai ouroboros plugin install . <span class="dt">\</span></span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">--plugin-home-root</span> <span class="st">&quot;</span><span class="va">$SANDBOX</span><span class="st">/plugins&quot;</span> <span class="dt">\</span></span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">--lockfile</span> <span class="st">&quot;</span><span class="va">$SANDBOX</span><span class="st">/lock.json&quot;</span> <span class="dt">\</span></span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">--trust-root</span> <span class="st">&quot;</span><span class="va">$SANDBOX</span><span class="st">/trust&quot;</span></span></code></pre></div>
+<p>Whichever of the two succeeds is the command the README must show. Edit the README’s install block to match the one that actually worked, and record the observed failure of the other in the commit message. Do not leave a command in the README that has not been run.</p>
+<ul class="task-list">
+<li><input type="checkbox" disabled="" />
+<strong>Step 3: Final audit across all tracked files</strong></li>
+</ul>
+<p>Run: <code>grep -rn "ooo spiral\|ouroboros_spiral\|ouroboros-spiral\|\.ouroboros/" $(git ls-files)</code></p>
+<p>Expected survivors, and nothing else: - <code>docs/superpowers/specs/2026-08-11-rename-design.md</code> and <code>docs/superpowers/plans/2026-08-11-murex-rename.md</code> — records of the rename, which necessarily name the old owner.</p>
+<p>Any hit in <code>src/</code>, <code>tests/</code>, <code>skills/</code>, <code>README.md</code>, <code>Cargo.toml</code>, or <code>ouroboros.plugin.json</code> is a miss from an earlier task. Fix it here.</p>
+<p>Then confirm the intended <code>ouroboros</code> references are still present:</p>
+<p>Run: <code>grep -rn "ouroboros" README.md ouroboros.plugin.json | grep -v "^Binary"</code> Expected: the upstream repository URL, the <code>ouroboros plugin</code> install commands, and the <code>ouroboros.plugin.json</code> filename in the layout table. All three are correct.</p>
+<ul class="task-list">
+<li><input type="checkbox" disabled="" />
+<strong>Step 4: Re-run the full verification set</strong></li>
+</ul>
+<div class="sourceCode" id="cb22"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="ex">cargo</span> test</span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a><span class="ex">cargo</span> clippy <span class="at">--all-targets</span> <span class="at">--</span> <span class="at">-D</span> warnings</span></code></pre></div>
+<p>Expected: three tests pass, clippy clean. Behaviour is the invariant; if either fails, the rename changed something it should not have.</p>
+<ul class="task-list">
+<li><input type="checkbox" disabled="" />
+<strong>Step 5: Commit</strong></li>
+</ul>
+<div class="sourceCode" id="cb23"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> add README.md</span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> commit <span class="at">-m</span> <span class="st">&quot;Rewrite the README for murex and drop a false claim</span></span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a><span class="st">The README said </span><span class="dt">\`</span><span class="st">ouroboros plugin add</span><span class="dt">\`</span><span class="st"> had not shipped in a release. It</span></span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a><span class="st">has - the released CLI carries a full plugin command group. The claim came</span></span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a><span class="st">from a truncated reading of </span><span class="dt">\`</span><span class="st">ouroboros --help</span><span class="dt">\`</span><span class="st">.</span></span>
+<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a><span class="st">The documented install command is the one that was actually run.&quot;</span></span></code></pre></div>
+<hr />
+<h3 id="task-5-rename-the-repository-directory-post-merge-maintainer">Task 5: Rename the repository directory (post-merge, maintainer)</h3>
+<p><strong>Not executed as part of this plan.</strong> The working session runs inside <code>.claude/worktrees/rust-port</code> beneath the repository, so moving the parent directory while any session is working under it breaks that session’s path.</p>
+<p>After the branch lands on <code>master</code> and the worktree is removed, the rename is:</p>
+<div class="sourceCode" id="cb24"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> <span class="at">-C</span> ~/workspace/ouroboros-spiral worktree list   <span class="co"># expect only the main checkout</span></span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a><span class="fu">mv</span> ~/workspace/ouroboros-spiral ~/workspace/murex</span></code></pre></div>
+<p>Nothing inside the repository refers to its own directory name, so no file changes accompany this step.</p>
+<hr />
+<h2 id="self-review">Self-Review</h2>
+<p><strong>Spec coverage.</strong> Every row of the spec’s Changes table maps to a task: crate, binary, and library names → Task 1, Step 3; manifest <code>name</code>, <code>namespace</code>, and usage strings → Task 2, Step 2; skill directory and frontmatter → Task 3, Steps 1-2; <code>STATE_PATH</code> → Task 1, Step 4; repository directory → Task 5. The spec’s “Error and guidance strings … must be updated in step with the namespace” is Task 1, Step 4’s table, which enumerates all seven. The spec’s five verification items map to Task 1 Steps 7-8 (tests, clippy), Task 2 Step 3 (schema), Task 4 Step 2 (end-to-end install), and Task 4 Step 3 (the grep audit, including the design document as an expected survivor). The spec’s “no migration code” constraint appears in Global Constraints and is enforced by Task 1 Step 1’s assertion that <code>.ouroboros</code> is never created.</p>
+<p><strong>Placeholder scan.</strong> No TBD, TODO, or “handle errors appropriately”. The one conditional branch — Task 4 Step 2’s fallback from <code>plugin add</code> to <code>plugin install</code> — states both commands in full and the rule for choosing between them, rather than deferring the decision.</p>
+<p><strong>Type consistency.</strong> <code>STATE_PATH</code> is the same identifier in Task 1’s interface block, Step 4’s table, and Step 1’s assertion. The binary name <code>murex</code> is consistent across Task 1’s <code>Cargo.toml</code>, Task 2’s <code>entrypoint.command</code>, and Task 4’s README. The namespace <code>murex</code> is consistent between Task 2’s manifest and Task 3’s skill frontmatter <code>name</code>, which the plan requires to match.</p>
+
+  </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<script>
+(function() {
+  const storageKey = 'oncoflow-html-theme';
+  const taskKeyPrefix = 'oncoflow-html-task:';
+
+  function applyTheme(theme) {
+    if (theme === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+    else document.documentElement.removeAttribute('data-theme');
+  }
+  const saved = localStorage.getItem(storageKey);
+  applyTheme(saved === 'dark' ? 'dark' : 'light');
+
+  document.getElementById('theme-toggle').addEventListener('click', () => {
+    const cur = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+    const next = cur === 'dark' ? 'light' : 'dark';
+    applyTheme(next);
+    localStorage.setItem(storageKey, next);
+    if (window.mermaid && typeof window.mermaid.initialize === 'function') {
+      window.mermaid.initialize({ startOnLoad: false, theme: next === 'dark' ? 'dark' : 'default' });
+      document.querySelectorAll('.mermaid').forEach((el, i) => {
+        if (el.dataset.src) el.innerHTML = el.dataset.src;
+        el.removeAttribute('data-processed');
+      });
+      window.mermaid.run({ querySelector: '.mermaid' });
+    }
+  });
+
+  // ---- Wrap each H2 + following siblings into <details class="section"> ----
+  const main = document.querySelector('main.content');
+  const headings = Array.from(main.querySelectorAll('h2'));
+  headings.forEach((h2, idx) => {
+    if (!h2.id) {
+      h2.id = 'sec-' + (idx + 1) + '-' + (h2.textContent || '').trim().toLowerCase().replace(/[^a-z0-9가-힣]+/g, '-').replace(/^-|-$/g, '');
+    }
+    const summary = document.createElement('summary');
+    summary.appendChild(h2.cloneNode(true));
+    const details = document.createElement('details');
+    details.className = 'section';
+    details.open = true;
+    details.appendChild(summary);
+    const body = document.createElement('div');
+    body.className = 'section-body';
+    let sibling = h2.nextElementSibling;
+    const toMove = [];
+    while (sibling && sibling.tagName !== 'H2') {
+      toMove.push(sibling);
+      sibling = sibling.nextElementSibling;
+    }
+    toMove.forEach(node => body.appendChild(node));
+    details.appendChild(body);
+    h2.parentNode.replaceChild(details, h2);
+  });
+
+  // ---- Interactive task checkboxes ----
+  const pageId = location.pathname.replace(/\W/g, '_');
+  Array.from(document.querySelectorAll('ul.task-list')).forEach(list => {
+    Array.from(list.querySelectorAll('li')).forEach((li, idx) => {
+      const cb = li.querySelector('input[type="checkbox"]');
+      if (!cb) return;
+      const key = taskKeyPrefix + pageId + ':' + (li.dataset.taskKey || idx);
+      cb.disabled = false;
+      const stored = localStorage.getItem(key);
+      if (stored === '1') {
+        cb.checked = true;
+        li.classList.add('checked');
+      }
+      cb.addEventListener('change', () => {
+        if (cb.checked) {
+          li.classList.add('checked');
+          localStorage.setItem(key, '1');
+        } else {
+          li.classList.remove('checked');
+          localStorage.removeItem(key);
+        }
+        updateProgress();
+      });
+    });
+  });
+
+  function updateProgress() {
+    const allCheckboxes = document.querySelectorAll('ul.task-list input[type="checkbox"]');
+    if (allCheckboxes.length === 0) return;
+    const done = Array.from(allCheckboxes).filter(c => c.checked).length;
+    const el = document.getElementById('task-progress');
+    el.hidden = false;
+    el.textContent = '진행 ' + done + ' / ' + allCheckboxes.length;
+  }
+  updateProgress();
+
+  // ---- Mermaid init ----
+  if (window.mermaid) {
+    Array.from(document.querySelectorAll('.mermaid')).forEach(el => {
+      el.dataset.src = el.innerHTML;
+    });
+    const initialTheme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'default';
+    window.mermaid.initialize({ startOnLoad: false, theme: initialTheme });
+    window.mermaid.run({ querySelector: '.mermaid' });
+  }
+})();
+</script>
+</body>
+</html>
