@@ -108,6 +108,22 @@ fn spiral_drives_cycles_by_risk_exposure() {
 }
 
 #[test]
+fn drained_spiral_reports_positive_zero_exposure() {
+    let tmp = TempDir::new().expect("temp dir");
+    let root = tmp.path();
+    sp::start(root, "drain", vec![], vec![]).expect("start");
+    sp::add_risk(root, "only risk", 0.5, 0.5, "").expect("add");
+    sp::open_cycle(root, vec![]).expect("cycle");
+    let done =
+        sp::commit(root, "continue", 1.0, "", vec!["R1".into()], "ok").expect("commit");
+    let exposure = number(&done, "/remaining_exposure");
+    assert_eq!(exposure, 0.0);
+    // -0.0 == 0.0, so the equality above cannot catch the sign bit; this does.
+    // Agents watch for the literal 0 as the convergence signal.
+    assert!(exposure.is_sign_positive(), "drained exposure serialised as -0.0");
+}
+
+#[test]
 fn risk_ids_rank_numerically_past_ten() {
     let tmp = TempDir::new().expect("temp dir");
     let root = tmp.path();
