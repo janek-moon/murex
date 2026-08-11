@@ -14,12 +14,12 @@ use std::process::ExitCode;
 use clap::{Parser, Subcommand};
 use serde_json::{json, Value};
 
-use ouroboros_spiral as spiral;
+use murex as spiral;
 
 #[derive(Parser)]
-#[command(name = "ooo spiral", about = "Risk-driven spiral-model cycles.")]
+#[command(name = "ooo murex", about = "Risk-driven spiral-model cycles.")]
 struct Cli {
-    /// Repository root holding .ouroboros/spiral.json.
+    /// Repository root holding .murex/spiral.json.
     #[arg(long, global = true, default_value = ".")]
     root: PathBuf,
     #[command(subcommand)]

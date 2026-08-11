@@ -1,17 +1,9 @@
 [package]
-name = "ouroboros-spiral"
+name = "murex"
 version = "0.1.0"
 edition = "2021"
 description = "Boehm spiral-model cycle controller for Ouroboros"
 license = "MIT"
-
-[lib]
-name = "ouroboros_spiral"
-path = "src/lib.rs"
-
-[[bin]]
-name = "ouroboros-spiral"
-path = "src/main.rs"
 
 [dependencies]
 chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
