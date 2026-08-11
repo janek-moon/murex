@@ -104,6 +104,6 @@
   "permissions": [],
   "entrypoint": {
     "type": "command",
-    "command": "python -m ouroboros_spiral"
+    "command": "ouroboros-spiral"
   }
 }

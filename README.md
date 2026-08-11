@@ -1,7 +1,7 @@
 # ouroboros-spiral
 
 A Boehm spiral-model cycle controller, packaged as an [Ouroboros](https://github.com/Q00/ouroboros)
-UserLevel plugin.
+UserLevel plugin. Rust, single binary.
 
 ## Why
 
@@ -16,13 +16,20 @@ each cycle must de-risk, and gates the commitment review. It never executes
 work - `ooo spiral cycle` emits a spike brief you hand to `ooo auto` or
 `ooo run`.
 
-## Install
+## Build and install
 
 ```bash
+cargo install --path .        # puts `ouroboros-spiral` on PATH
 ouroboros plugin add /path/to/ouroboros-spiral --plugin spiral
 ```
 
-Requires Python 3.10+. No third-party dependencies.
+The manifest's entrypoint is the bare binary name, so the plugin resolves it
+from PATH. Until `ouroboros plugin add` ships in a release, run the binary
+directly - the argv and JSON output are identical either way:
+
+```bash
+cargo run -- --root <target-repo> status
+```
 
 ## Use
 
@@ -41,14 +48,16 @@ one. The full walkthrough lives there.
 
 ## Layout
 
-| Path                       | Role                                              |
-|----------------------------|---------------------------------------------------|
-| `ouroboros.plugin.json`    | Plugin manifest (schema 0.1)                      |
-| `ouroboros_spiral/`        | Controller logic and the CLI entrypoint           |
-| `skills/spiral/SKILL.md`   | In-agent surface for Claude Code / Codex          |
-| `test_spiral.py`           | Self-check: `python3 test_spiral.py`              |
+| Path                     | Role                                          |
+|--------------------------|-----------------------------------------------|
+| `ouroboros.plugin.json`  | Plugin manifest (schema 0.1)                  |
+| `src/lib.rs`             | Controller logic - register, ranking, gate    |
+| `src/main.rs`            | CLI entrypoint; argv in, JSON out             |
+| `skills/spiral/SKILL.md` | In-agent surface for Claude Code / Codex      |
+| `tests/spiral.rs`        | Self-check: `cargo test`                      |
 
-State is written to `.ouroboros/spiral.json` in the target repository.
+State is written to `.ouroboros/spiral.json` in the target repository. The
+format is plain JSON, so the register stays readable and diffable in review.
 
 ## Scope
 
