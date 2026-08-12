@@ -42,13 +42,13 @@ Claude Code:
 /plugin install murex@murex
 ```
 
-Codex는 `install.sh`가 링크해 주는 `~/.codex/skills/murex`에서 같은
+Codex는 `install.sh`가 링크해 주는 `~/.codex/skills/spiral`에서 같은
 스킬을 읽습니다.
 
 ## 사용
 
-스킬(`skills/murex/SKILL.md`)이 에이전트에게 전체 루프를 가르칩니다.
-손으로 하면:
+스킬(`skills/spiral/SKILL.md`, 호출은 `/murex:spiral`)이 에이전트에게
+전체 루프를 가르칩니다. 손으로 하면:
 
 ```bash
 murex start "실시간 협업 편집 출시"

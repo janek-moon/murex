@@ -51,8 +51,8 @@ ouroboros plugin install "$REPO"
 # serves both hosts.
 if [ -d "$HOME/.codex" ]; then
     mkdir -p "$HOME/.codex/skills"
-    ln -sfn "$REPO/skills/murex" "$HOME/.codex/skills/murex"
-    echo "==> Linked skill into ~/.codex/skills/murex"
+    ln -sfn "$REPO/skills/spiral" "$HOME/.codex/skills/spiral"
+    echo "==> Linked skill into ~/.codex/skills/spiral"
 fi
 
 echo
