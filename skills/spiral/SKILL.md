@@ -1,5 +1,5 @@
 ---
-name: murex
+name: spiral
 description: "Run risk-driven spiral-model development: register risks, spike the largest one per cycle through Ouroboros (ooo auto), gate on a commitment review, repeat until exposure is drained"
 ---
 

@@ -42,12 +42,13 @@ Claude Code:
 /plugin install murex@murex
 ```
 
-Codex reads the same skill from `~/.codex/skills/murex`, linked by
+Codex reads the same skill from `~/.codex/skills/spiral`, linked by
 `install.sh`.
 
 ## Use
 
-The skill (`skills/murex/SKILL.md`) teaches the agent the full loop; by hand:
+The skill (`skills/spiral/SKILL.md`, invoked as `/murex:spiral`) teaches the
+agent the full loop; by hand:
 
 ```bash
 murex start "ship realtime collaborative editing"
