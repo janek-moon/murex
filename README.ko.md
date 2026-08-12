@@ -2,6 +2,8 @@
 
 [English](README.md) | 한국어
 
+![murex — 나선형 모델 지휘자](assets/banner.png)
+
 코딩 에이전트를 위한 Boehm 나선형 모델 지휘자입니다. Claude Code 또는
 Codex 플러그인으로 설치하면 리스크 주도 루프를 구동합니다: 모르는 것을
 등록하고, 사이클마다 가장 큰 리스크를

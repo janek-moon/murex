@@ -2,6 +2,8 @@
 
 English | [한국어](README.ko.md)
 
+![murex — spiral-model conductor](assets/banner.png)
+
 A Boehm spiral-model conductor for coding agents. Installed as a Claude Code
 or Codex plugin, it drives a risk-driven loop: register what is unknown,
 spike the largest risk each cycle through
