@@ -1,6 +1,6 @@
 ---
 name: spiral
-description: "Run risk-driven spiral-model development: register risks, spike the largest one per cycle through Ouroboros (ooo auto), gate on a commitment review, repeat until exposure is drained"
+description: "Run risk-driven spiral-model development: register risks, spike the largest one per cycle in an isolated subagent, gate on a commitment review, repeat until exposure is drained"
 ---
 
 # murex - Spiral-Model Conductor
@@ -11,37 +11,35 @@ You are the conductor of a Boehm spiral. Three parts, three jobs:
 
 - **`murex`** (this plugin's binary) - the deterministic bookkeeping: risk
   register, top-risk selection, the commitment gate. It never executes work.
-- **Ouroboros** (`ooo auto`) - the execution engine. Each cycle's spike runs
-  through it.
+- **An executor** - a fresh subagent of your host by default; Ouroboros
+  (`ooo auto`) only when a spike needs something the host cannot give.
 - **You** - interview the human into a scored risk register, hand each cycle's
-  brief to the engine, verify the evidence it brings back, close the gate,
+  brief to the executor, verify the evidence it brings back, close the gate,
   repeat.
 
 Use this when the work has real unknowns: an unproven integration, a
 performance target nobody has measured, a vendor API that may not do what the
-docs claim. If the requirements are already clear, skip murex and run
-`ooo auto` directly - a spiral with no risks is just a slower waterfall.
+docs claim. If the requirements are already clear, just build it - a spiral
+with no risks is a slower waterfall.
 
-Where `ooo evolve` iterates until a quality gate passes, this loop iterates
-until the **risks** are retired - and a commitment review between cycles
-decides whether the next one is worth its cost.
+Where a quality loop iterates until an evaluation gate passes, this loop
+iterates until the **risks** are retired - and a commitment review between
+cycles decides whether the next one is worth its cost.
 
 ## Prerequisites
 
-`murex` and `ooo` must be on PATH:
+`murex` on PATH:
 
 ```bash
 command -v murex || cargo install --git https://github.com/janek-moon/murex
-command -v ooo   || uv tool install ouroboros-ai
 ```
 
-(From a checkout, `./install.sh` does both and registers the plugin with
-Ouroboros as well.)
+Optional, only for cross-runtime or detached spikes: `uv tool install ouroboros-ai`.
 
 ## The loop
 
 ```
-start -> risk add (interview) -> [ cycle -> ooo auto -> commit ]* -> drained
+start -> risk add (interview) -> [ cycle -> spike -> commit ]* -> drained
 ```
 
 ### 1. Open the spiral
@@ -75,25 +73,27 @@ murex --root . cycle
 Returns the spike brief for the highest-exposure open risk: an `instruction`
 that names exactly one risk and forbids broadening scope.
 
-### 4. Execute the spike through Ouroboros
+### 4. Execute the spike
 
-Hand the brief's `instruction` to the engine:
+Dispatch a fresh subagent with the brief's `instruction` and nothing else - a
+clean context that builds the smallest prototype and reports its evidence
+back, while your own context stays on the register.
 
-```bash
-ooo auto "<brief.instruction>"
-```
+Reach for Ouroboros instead only when it buys something the host cannot:
 
-Driving from Codex, add `--runtime codex`. If the run detaches into a
-background job, wait for it: `ooo job wait <job-id>`, then fetch the result
-with `ooo job result <job-id>`.
+- the spike should run on a **different runtime**:
+  `ooo auto --runtime codex "<brief.instruction>"`
+- a long spike should run **detached**: `ooo auto` returns a job id
+  (`ooo job wait <id>`, `ooo job result <id>`) and spawns a live dashboard URL
+- you want an **evaluation gate independent of the conductor**
 
-The spawned CLI inherits your environment, so the spike runs on the same
-Claude profile as the conductor. To pin a different one, prefix the call:
-`CLAUDE_CONFIG_DIR=~/.claude ooo auto "<instruction>"`.
+A spawned CLI inherits your environment, so a spike runs on the same Claude
+profile as the conductor; prefix with `CLAUDE_CONFIG_DIR=~/.claude` to pin a
+different one.
 
-When the engine returns, **verify the evidence yourself** - read what it
+When the spike returns, **verify the evidence yourself** - read what it
 built, run its checks - before touching the gate. The gate records what you
-verified, not what the engine claims.
+verified, not what the executor claims.
 
 ### 5. Commitment review
 

@@ -1,7 +1,7 @@
 {
   "name": "murex",
-  "version": "0.1.2",
-  "description": "Boehm spiral-model conductor: risk register, top-risk selection, and the commitment gate between cycles. Execution is delegated to Ouroboros (ooo auto).",
+  "version": "0.2.0",
+  "description": "Boehm spiral-model conductor: risk register, top-risk selection, and the commitment gate between cycles. Spikes run in a fresh subagent; Ouroboros is the optional engine.",
   "author": {
     "name": "janek-moon",
     "url": "https://github.com/janek-moon"
