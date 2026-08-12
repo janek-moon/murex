@@ -23,11 +23,9 @@ you (agent) ── murex start / risk add        register + score the unknowns
 
 `murex` is the deterministic bookkeeping - risk register, exposure ranking
 (probability × impact), the commitment gate - and never executes work. The
-spike runs in a fresh subagent of the conducting agent by default;
-[Ouroboros](https://github.com/Q00/ouroboros) (`ooo auto`) is the optional
-engine for a different runtime, a detached background run, or an evaluation
-gate independent of the conductor. Where a quality loop iterates until a gate
-passes, this loop iterates until the risks are retired. State lives in
+spike runs in a fresh subagent of the conducting agent: the same isolation an
+external engine would give, without one. Where a quality loop iterates until
+a gate passes, this loop iterates until the risks are retired. State lives in
 `.murex/spiral.json` in the target repository, as plain JSON.
 
 ## Why a spiral, not agile
@@ -43,7 +41,7 @@ and stopping is a legitimate outcome.
 ## Install
 
 ```bash
-./install.sh   # builds murex, links the skill; adds the optional Ouroboros integration when uv is present
+./install.sh   # builds murex and links the skill for Claude Code / Codex
 ```
 
 Claude Code:
@@ -65,11 +63,9 @@ agent the full loop; by hand:
 murex start "ship realtime collaborative editing"
 murex risk add "CRDT memory may exceed the 2GB box" --probability 0.6 --impact 0.9
 murex cycle                          # -> spike brief for the top-exposure risk
-# spike the brief - a fresh subagent, or: ooo auto "<instruction>"
+# spike the brief in a fresh subagent
 murex commit --decision continue --cost 1.5 --resolve R1 --evidence "380MB RSS"
 murex status                         # radius + remaining exposure
 ```
 
-All commands take `--root <repo>` (default `.`). Registered with Ouroboros
-(`ouroboros plugin install .`), the same commands are also available as
-`ooo murex <cmd>`.
+All commands take `--root <repo>` (default `.`).

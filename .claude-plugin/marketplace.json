@@ -1,7 +1,7 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "murex",
-  "description": "Risk-driven spiral-model development: spike the largest risk each cycle through Ouroboros, gate on a commitment review.",
+  "description": "Risk-driven spiral-model development: spike the largest risk each cycle, gate on a commitment review.",
   "owner": {
     "name": "janek-moon",
     "url": "https://github.com/janek-moon"
@@ -9,7 +9,7 @@
   "plugins": [
     {
       "name": "murex",
-      "description": "Boehm spiral-model conductor: risk register, top-risk selection, commitment gate; execution delegated to Ouroboros.",
+      "description": "Boehm spiral-model conductor: risk register, top-risk selection, commitment gate; spikes run in a fresh subagent.",
       "source": "./",
       "category": "workflow"
     }

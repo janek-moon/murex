@@ -11,8 +11,8 @@ You are the conductor of a Boehm spiral. Three parts, three jobs:
 
 - **`murex`** (this plugin's binary) - the deterministic bookkeeping: risk
   register, top-risk selection, the commitment gate. It never executes work.
-- **An executor** - a fresh subagent of your host by default; Ouroboros
-  (`ooo auto`) only when a spike needs something the host cannot give.
+- **An executor** - a fresh subagent of your host: clean context in,
+  evidence out.
 - **You** - interview the human into a scored risk register, hand each cycle's
   brief to the executor, verify the evidence it brings back, close the gate,
   repeat.
@@ -33,8 +33,6 @@ cycles decides whether the next one is worth its cost.
 ```bash
 command -v murex || cargo install --git https://github.com/janek-moon/murex
 ```
-
-Optional, only for cross-runtime or detached spikes: `uv tool install ouroboros-ai`.
 
 ## The loop
 
@@ -78,18 +76,6 @@ that names exactly one risk and forbids broadening scope.
 Dispatch a fresh subagent with the brief's `instruction` and nothing else - a
 clean context that builds the smallest prototype and reports its evidence
 back, while your own context stays on the register.
-
-Reach for Ouroboros instead only when it buys something the host cannot:
-
-- the spike should run on a **different runtime**:
-  `ooo auto --runtime codex "<brief.instruction>"`
-- a long spike should run **detached**: `ooo auto` returns a job id
-  (`ooo job wait <id>`, `ooo job result <id>`) and spawns a live dashboard URL
-- you want an **evaluation gate independent of the conductor**
-
-A spawned CLI inherits your environment, so a spike runs on the same Claude
-profile as the conductor; prefix with `CLAUDE_CONFIG_DIR=~/.claude` to pin a
-different one.
 
 When the spike returns, **verify the evidence yourself** - read what it
 built, run its checks - before touching the gate. The gate records what you
@@ -135,5 +121,3 @@ risk with the human before spending another cycle.
   the register. Risks are never deleted, only `resolved` or `accepted`
   (`murex risk close <id> --status accepted` for risks the human decides to
   live with), so what you knowingly shipped past stays auditable.
-- Registered as an Ouroboros plugin (`ouroboros plugin install .`), the same
-  commands are also available as `ooo murex <cmd>`.

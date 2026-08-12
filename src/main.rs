@@ -1,7 +1,6 @@
 //! Command entrypoint for the spiral plugin.
 //!
-//! Ouroboros invokes plugins as `<entrypoint.command> <command> [args...]` and
-//! reads a JSON document from stdout, so every path here prints JSON and
+//! The contract is argv in, JSON on stdout: every path here prints JSON and
 //! nothing else. Failures print `{"error": ...}` and exit 1.
 //!
 //! Argument *values* are validated in the library rather than by clap, so that
@@ -17,7 +16,7 @@ use serde_json::{json, Value};
 use murex as spiral;
 
 #[derive(Parser)]
-#[command(name = "ooo murex", about = "Risk-driven spiral-model cycles.")]
+#[command(name = "murex", about = "Risk-driven spiral-model cycles.")]
 struct Cli {
     /// Repository root holding .murex/spiral.json.
     #[arg(long, global = true, default_value = ".")]
