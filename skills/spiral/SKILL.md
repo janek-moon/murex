@@ -87,6 +87,10 @@ Driving from Codex, add `--runtime codex`. If the run detaches into a
 background job, wait for it: `ooo job wait <job-id>`, then fetch the result
 with `ooo job result <job-id>`.
 
+The spawned CLI inherits your environment, so the spike runs on the same
+Claude profile as the conductor. To pin a different one, prefix the call:
+`CLAUDE_CONFIG_DIR=~/.claude ooo auto "<instruction>"`.
+
 When the engine returns, **verify the evidence yourself** - read what it
 built, run its checks - before touching the gate. The gate records what you
 verified, not what the engine claims.
