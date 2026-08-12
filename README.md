@@ -1,5 +1,7 @@
 # murex
 
+English | [한국어](README.ko.md)
+
 A Boehm spiral-model conductor for coding agents. Installed as a Claude Code
 or Codex plugin, it turns the agent into the driver of a risk-driven loop:
 register what is unknown, spike the largest risk each cycle through
