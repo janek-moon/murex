@@ -31,13 +31,13 @@ repository, as plain JSON.
 
 ## Why a spiral, not agile
 
-Agile optimizes the cost of building - short sprints and small increments
-exist because implementation used to be slow and expensive. AI agents collapse
-that cost, and what remains expensive is proceeding on unvalidated
-assumptions: an agent is fast, confident, and happy to polish a doomed
-approach until the tests go green. So progress here is measured in retired
-risks rather than shipped increments, cost only counts when it buys down
-exposure, and the gate is allowed to conclude `stop`.
+Agile's short sprints and small increments come from an era when writing
+code was slow and expensive. AI agents have made building nearly free -
+what is expensive now is building quickly on top of a wrong assumption. An
+agent is fast and confident, and will happily polish a doomed approach until
+the tests pass. So murex counts progress not in how much got built but in
+which risks were retired: spending only matters when it reduces uncertainty,
+and stopping is a legitimate outcome.
 
 ## Install
 
