@@ -29,6 +29,16 @@ Ouroboros is the execution engine each spike runs through. Where Ouroboros's
 the risks are retired. State lives in `.murex/spiral.json` in the target
 repository, as plain JSON.
 
+## Why a spiral, not agile
+
+Agile optimizes the cost of building - short sprints and small increments
+exist because implementation used to be slow and expensive. AI agents collapse
+that cost, and what remains expensive is proceeding on unvalidated
+assumptions: an agent is fast, confident, and happy to polish a doomed
+approach until the tests go green. So progress here is measured in retired
+risks rather than shipped increments, cost only counts when it buys down
+exposure, and the gate is allowed to conclude `stop`.
+
 ## Install
 
 ```bash
