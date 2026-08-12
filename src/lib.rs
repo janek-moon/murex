@@ -1,14 +1,13 @@
-//! Boehm spiral-model cycle controller for Ouroboros.
+//! Boehm spiral-model cycle controller for coding agents.
 //!
-//! Ouroboros already owns execution (`ooo auto`, `ooo run`, `ooo evolve`). Its
-//! evolve loop is quality-driven: it iterates until an evaluation gate passes.
-//! The spiral model is risk-driven instead - each cycle exists to retire the
-//! single largest risk, and a commitment review decides whether the next cycle
-//! is worth its cost.
+//! A quality loop iterates until an evaluation gate passes. The spiral model
+//! is risk-driven instead - each cycle exists to retire the single largest
+//! risk, and a commitment review decides whether the next cycle is worth its
+//! cost.
 //!
-//! This crate adds only that missing layer: the risk register, top-risk
-//! selection, and the commitment gate. It never executes work. [`open_cycle`]
-//! emits a spike brief that the operator (or agent) hands to the runtime.
+//! This crate is only that layer: the risk register, top-risk selection, and
+//! the commitment gate. It never executes work. [`open_cycle`] emits a spike
+//! brief that the conducting agent hands to a fresh subagent.
 
 use std::fmt;
 use std::fs;
@@ -117,7 +116,7 @@ fn state_file(root: &Path) -> PathBuf {
 pub fn load(root: &Path) -> Result<Spiral> {
     let path = state_file(root);
     if !path.exists() {
-        return err("no spiral here - run `ooo murex start \"<objective>\"` first");
+        return err("no spiral here - run `murex start \"<objective>\"` first");
     }
     let text = fs::read_to_string(&path)
         .map_err(|e| SpiralError(format!("cannot read {}: {e}", path.display())))?;
@@ -190,7 +189,7 @@ pub fn start(
     let path = state_file(root);
     if path.exists() {
         return err(format!(
-            "spiral already exists at {} - see `ooo murex status`",
+            "spiral already exists at {} - see `murex status`",
             path.display()
         ));
     }
@@ -211,7 +210,7 @@ pub fn start(
         "objective": objective,
         "status": "active",
         "state_file": path.display().to_string(),
-        "next": "ooo murex risk add \"<risk>\" --probability 0.7 --impact 0.9",
+        "next": "murex risk add \"<risk>\" --probability 0.7 --impact 0.9",
     }))
 }
 
@@ -304,7 +303,7 @@ pub fn open_cycle(root: &Path, objectives: Vec<String>) -> Result<Value> {
     if let Some(index) = pending_index(&state) {
         return err(format!(
             "cycle {} is still open - close it with \
-             `ooo murex commit --decision <continue|pivot|stop>`",
+             `murex commit --decision <continue|pivot|stop>`",
             state.cycles[index].n
         ));
     }
@@ -313,7 +312,7 @@ pub fn open_cycle(root: &Path, objectives: Vec<String>) -> Result<Value> {
         None => {
             return err(
                 "no open risks - a spiral cycle must be driven by one. Add a risk \
-                 with `ooo murex risk add`, or close out with `ooo murex stop`.",
+                 with `murex risk add`, or close out with `murex stop`.",
             )
         }
     };
@@ -345,9 +344,9 @@ pub fn open_cycle(root: &Path, objectives: Vec<String>) -> Result<Value> {
         "cycle": state.cycle,
         "brief": brief(&state, &state.risks[top], state.cycle),
         "next": [
-            "hand the brief to the runtime, e.g. `ooo auto \"<instruction>\"`",
+            "hand the brief to a fresh subagent and collect its evidence",
             format!(
-                "then `ooo murex commit --decision continue --cost <n> --resolve {top_id}`"
+                "then `murex commit --decision continue --cost <n> --resolve {top_id}`"
             ),
         ],
     }))
@@ -370,7 +369,7 @@ pub fn commit(
     }
     let mut state = load(root)?;
     let Some(index) = pending_index(&state) else {
-        return err("no open cycle - start one with `ooo murex cycle`");
+        return err("no open cycle - start one with `murex cycle`");
     };
     let n = state.cycles[index].n;
     // Resolve every id before mutating, so one bad id cannot half-apply.

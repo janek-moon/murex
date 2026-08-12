@@ -1,10 +1,5 @@
 #!/bin/sh
-# Install murex: build the binary, link the skill where the hosts find it,
-# and set up the optional Ouroboros integration when the tooling is present.
-#
-# Ouroboros is not required. The default executor for a spike is a fresh
-# subagent of the conducting agent; `ooo auto` is the optional engine for a
-# different runtime, a detached run, or an independent evaluation gate.
+# Install murex: build the binary and link the skill where the hosts find it.
 
 set -eu
 
@@ -30,28 +25,6 @@ if [ -d "$HOME/.codex" ]; then
     mkdir -p "$HOME/.codex/skills"
     ln -sfn "$REPO/skills/spiral" "$HOME/.codex/skills/spiral"
     echo "==> Linked skill into ~/.codex/skills/spiral"
-fi
-
-# Optional Ouroboros integration: the `ooo murex <cmd>` surface, and
-# `ooo auto` as an alternative spike engine. Best-effort - skipping it
-# leaves the default subagent flow fully functional.
-if have ouroboros; then
-    echo "==> Registering murex with Ouroboros"
-    # `install` rather than `add`: this repository ships a single manifest,
-    # and `add --plugin <name>` expects a plugin catalog it does not have.
-    ouroboros plugin install "$REPO"
-elif have uv; then
-    echo "==> Installing Ouroboros (optional integration)"
-    uv tool install ouroboros-ai
-    # uv puts tool binaries in ~/.local/bin, which is not on every PATH.
-    if have ouroboros; then
-        ouroboros plugin install "$REPO"
-    else
-        echo "Installed ouroboros-ai, but 'ouroboros' is not on PATH (~/.local/bin);" >&2
-        echo "skipping registration - add it to PATH and re-run to complete it." >&2
-    fi
-else
-    echo "==> Skipping Ouroboros integration (optional) - install uv and re-run to add it"
 fi
 
 echo

@@ -22,13 +22,11 @@ Codex 플러그인으로 설치하면 리스크 주도 루프를 구동합니다
 ```
 
 `murex`는 결정론적 장부입니다 — 리스크 등록부, 노출 순위(확률 × 영향),
-커밋먼트 게이트 — 그리고 절대 직접 일하지 않습니다. 스파이크는 기본적으로
-지휘하는 에이전트의 새 서브에이전트에서 돌고,
-[Ouroboros](https://github.com/Q00/ouroboros)(`ooo auto`)는 다른 런타임,
-분리된 백그라운드 실행, 지휘자와 독립된 평가 게이트가 필요할 때 쓰는
-선택 엔진입니다. 품질 루프가 게이트를 통과할 때까지 돈다면, 이 루프는
-리스크가 소진될 때까지 돕니다. 상태는 대상 저장소의 `.murex/spiral.json`에
-평문 JSON으로 기록됩니다.
+커밋먼트 게이트 — 그리고 절대 직접 일하지 않습니다. 스파이크는 지휘하는
+에이전트의 새 서브에이전트에서 돕니다 — 외부 엔진 없이 같은 격리를
+얻습니다. 품질 루프가 게이트를 통과할 때까지 돈다면, 이 루프는 리스크가
+소진될 때까지 돕니다. 상태는 대상 저장소의 `.murex/spiral.json`에 평문
+JSON으로 기록됩니다.
 
 ## 왜 애자일이 아니라 나선형인가
 
@@ -43,7 +41,7 @@ Codex 플러그인으로 설치하면 리스크 주도 루프를 구동합니다
 ## 설치
 
 ```bash
-./install.sh   # murex 빌드·스킬 링크, uv가 있으면 선택 사항인 Ouroboros 연동까지
+./install.sh   # murex 빌드, Claude Code/Codex용 스킬 링크
 ```
 
 Claude Code:
@@ -65,11 +63,9 @@ Codex는 `install.sh`가 링크해 주는 `~/.codex/skills/spiral`에서 같은
 murex start "실시간 협업 편집 출시"
 murex risk add "CRDT 메모리가 2GB 한도를 넘을 수 있음" --probability 0.6 --impact 0.9
 murex cycle                          # -> 최대 노출 리스크의 스파이크 브리프
-# 브리프 실행 — 새 서브에이전트로, 또는: ooo auto "<instruction>"
+# 브리프를 새 서브에이전트로 실행
 murex commit --decision continue --cost 1.5 --resolve R1 --evidence "RSS 380MB"
 murex status                         # 반경 + 잔여 노출
 ```
 
-모든 명령은 `--root <repo>`를 받습니다(기본 `.`). Ouroboros에 등록하면
-(`ouroboros plugin install .`) 같은 명령을 `ooo murex <cmd>`로도 쓸 수
-있습니다.
+모든 명령은 `--root <repo>`를 받습니다(기본 `.`).
