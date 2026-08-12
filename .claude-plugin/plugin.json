@@ -1,6 +1,6 @@
 {
   "name": "murex",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Boehm spiral-model conductor: risk register, top-risk selection, and the commitment gate between cycles. Spikes run in a fresh subagent of the conducting agent.",
   "author": {
     "name": "janek-moon",

@@ -41,8 +41,13 @@ and stopping is a legitimate outcome.
 ## Install
 
 ```bash
-./install.sh   # builds murex and links the skill for Claude Code / Codex
+curl -fsSL https://raw.githubusercontent.com/janek-moon/murex/main/install.sh | sh
 ```
+
+Fetches the prebuilt binary for your platform from the latest release - no
+toolchain needed. From a checkout, `./install.sh` does the same and also
+links the skill for Codex; it falls back to `cargo install --path .` when no
+release asset fits the platform.
 
 Claude Code:
 

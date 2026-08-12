@@ -28,10 +28,11 @@ cycles decides whether the next one is worth its cost.
 
 ## Prerequisites
 
-`murex` on PATH:
+`murex` on PATH. If missing, fetch the prebuilt binary for this platform
+(falls back to a cargo build when no release asset fits):
 
 ```bash
-command -v murex || cargo install --git https://github.com/janek-moon/murex
+command -v murex || curl -fsSL https://raw.githubusercontent.com/janek-moon/murex/main/install.sh | sh
 ```
 
 ## The loop
