@@ -41,8 +41,13 @@ JSON으로 기록됩니다.
 ## 설치
 
 ```bash
-./install.sh   # murex 빌드, Claude Code/Codex용 스킬 링크
+curl -fsSL https://raw.githubusercontent.com/janek-moon/murex/main/install.sh | sh
 ```
+
+최신 릴리스에서 플랫폼에 맞는 사전 빌드 바이너리를 받습니다 — 툴체인이
+필요 없습니다. 체크아웃에서 `./install.sh`를 돌리면 같은 일에 더해 Codex용
+스킬 링크까지 하고, 플랫폼에 맞는 릴리스가 없으면
+`cargo install --path .`로 대체합니다.
 
 Claude Code:
 
