@@ -62,14 +62,17 @@ fi
 
 # Codex discovers skills from ~/.codex/skills/<name>/SKILL.md - the same
 # format Claude Code reads from this repo's skills/ directory. Only possible
-# from a checkout; the Claude Code plugin ships the skill by itself.
-SKILL_DIR=$(dirname "$0")/skills/spiral
-if [ -d "$SKILL_DIR" ] && [ -d "$HOME/.codex" ]; then
+# from a checkout; the Claude Code plugin ships the skills by itself.
+SKILLS_DIR=$(dirname "$0")/skills
+if [ -d "$SKILLS_DIR" ] && [ -d "$HOME/.codex" ]; then
     mkdir -p "$HOME/.codex/skills"
-    ln -sfn "$(cd "$SKILL_DIR" && pwd)" "$HOME/.codex/skills/spiral"
-    echo "==> Linked skill into ~/.codex/skills/spiral"
+    for skill in "$SKILLS_DIR"/*/; do
+        name=$(basename "$skill")
+        ln -sfn "$(cd "$skill" && pwd)" "$HOME/.codex/skills/$name"
+        echo "==> Linked skill into ~/.codex/skills/$name"
+    done
 fi
 
 echo
-echo "Done. In Claude Code: /murex:spiral. By hand:"
+echo "Done. In Claude Code: /murex:spiral, /murex:audit. By hand:"
 echo "  murex --root <target-repo> status"
