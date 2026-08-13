@@ -74,3 +74,9 @@ murex status                         # radius + remaining exposure
 ```
 
 All commands take `--root <repo>` (default `.`).
+
+A second skill (`skills/audit/SKILL.md`, invoked as `/murex:audit`) reviews a
+running ledger for the discipline the binary cannot enforce - scores that
+actually rank, gate evidence that actually retires risks, exposure that
+actually drains - and flags an incremental build wearing spiral clothing.
+Verdicts cite risk ids and cycle numbers from `.murex/spiral.json`.

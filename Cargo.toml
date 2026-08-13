@@ -1,6 +1,6 @@
 [package]
 name = "murex"
-version = "0.3.1"
+version = "0.4.0"
 edition = "2021"
 description = "Boehm spiral-model conductor: risk register, top-risk selection, and the commitment gate between cycles"
 license = "MIT"
