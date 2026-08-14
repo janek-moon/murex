@@ -17,6 +17,8 @@ use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 
+pub mod ratchet;
+
 pub const STATE_PATH: &str = ".murex/spiral.json";
 pub const DECISIONS: [&str; 3] = ["continue", "pivot", "stop"];
 /// A risk still steers cycles until it is resolved or explicitly accepted.
@@ -36,15 +38,15 @@ impl std::error::Error for SpiralError {}
 
 pub type Result<T> = std::result::Result<T, SpiralError>;
 
-fn err<T>(message: impl Into<String>) -> Result<T> {
+pub(crate) fn err<T>(message: impl Into<String>) -> Result<T> {
     Err(SpiralError(message.into()))
 }
 
-fn round4(value: f64) -> f64 {
+pub(crate) fn round4(value: f64) -> f64 {
     (value * 10_000.0).round() / 10_000.0
 }
 
-fn now() -> String {
+pub(crate) fn now() -> String {
     Utc::now().format("%Y-%m-%dT%H:%M:%SZ").to_string()
 }
 
