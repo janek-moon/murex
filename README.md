@@ -28,6 +28,22 @@ external engine would give, without one. Where a quality loop iterates until
 a gate passes, this loop iterates until the risks are retired. State lives in
 `.murex/spiral.json` in the target repository, as plain JSON.
 
+### Two modes
+
+Unclear requirements: run the spiral above to de-risk before committing.
+Clear requirements: run the ratchet below to build bottom-up, verifying each
+layer before the next. A drained spiral hands off to a ratchet.
+
+```
+you (agent) ── murex ratchet start / add     decompose into verifiable components
+     │
+     ├─ murex ratchet next ───────▶ build brief for the lowest buildable component
+     ├─ build (fresh subagent) ───▶ smallest implementation, evidence back
+     ├─ murex ratchet verify ─────▶ evidence, cost; locks the component
+     │
+     └─ repeat until every component is verified
+```
+
 ## Why a spiral, not agile
 
 Agile's short sprints and small increments come from an era when writing
@@ -75,7 +91,20 @@ murex status                         # radius + remaining exposure
 
 All commands take `--root <repo>` (default `.`).
 
-A second skill (`skills/audit/SKILL.md`, invoked as `/murex:audit`) reviews a
+When `remaining_exposure` reaches 0, `status` prints a handoff line: switch
+to the ratchet (`skills/ratchet/SKILL.md`, invoked as `/murex:ratchet`) to
+build the de-risked feature bottom-up, verifying each layer before the next:
+
+```bash
+murex ratchet start "ship CSV export" --requirement "a user downloads a valid CSV of their data"
+murex ratchet add "CSV row encoder" --requirement "encodes one record to RFC-4180"
+murex ratchet next                   # -> build brief for the lowest buildable component
+# build it in a fresh subagent
+murex ratchet verify C1 --evidence "cargo test csv_encoder green" --cost 1.0
+murex ratchet status                 # verified/total + the current frontier
+```
+
+A third skill (`skills/audit/SKILL.md`, invoked as `/murex:audit`) reviews a
 running ledger for the discipline the binary cannot enforce - scores that
 actually rank, gate evidence that actually retires risks, exposure that
 actually drains - and flags an incremental build wearing spiral clothing.

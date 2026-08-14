@@ -28,6 +28,22 @@ Codex 플러그인으로 설치하면 리스크 주도 루프를 구동합니다
 소진될 때까지 돕니다. 상태는 대상 저장소의 `.murex/spiral.json`에 평문
 JSON으로 기록됩니다.
 
+### 두 가지 모드
+
+요구사항이 불명확할 때는 위의 나선으로 커밋 전에 위험을 제거합니다.
+요구사항이 명확할 때는 아래의 래칫으로 아래에서 위로 각 층을 검증하며
+쌓아 올립니다. 나선이 소진되면 래칫으로 넘어갑니다.
+
+```
+에이전트(당신) ── murex ratchet start / add   검증 가능한 컴포넌트로 분해
+     │
+     ├─ murex ratchet next ───────▶ 가장 낮은 단계의 빌드 브리프
+     ├─ 빌드 (새 서브에이전트) ────▶ 최소 구현, 증거 회수
+     ├─ murex ratchet verify ─────▶ 증거, 비용; 컴포넌트 잠금
+     │
+     └─ 모든 컴포넌트가 검증될 때까지 반복
+```
+
 ## 왜 애자일이 아니라 나선형인가
 
 애자일의 짧은 스프린트와 작은 증분은 코드를 만드는 일이 느리고 비싸던
@@ -75,7 +91,20 @@ murex status                         # 반경 + 잔여 노출
 
 모든 명령은 `--root <repo>`를 받습니다(기본 `.`).
 
-두 번째 스킬(`skills/audit/SKILL.md`, 호출은 `/murex:audit`)은 진행 중인
+remaining_exposure가 0에 도달하면 status가 handoff 줄을 출력합니다: 래칫
+(`skills/ratchet/SKILL.md`, 호출은 `/murex:ratchet`)으로 넘어가 위험이
+제거된 기능을 아래에서 위로, 각 층을 검증하며 만듭니다:
+
+```bash
+murex ratchet start "CSV 내보내기 출시" --requirement "사용자가 유효한 CSV를 다운로드"
+murex ratchet add "CSV 행 인코더" --requirement "한 레코드를 RFC-4180으로 인코딩"
+murex ratchet next                   # -> 가장 낮은 단계의 빌드 브리프
+# 새 서브에이전트로 빌드 실행
+murex ratchet verify C1 --evidence "cargo test csv_encoder green" --cost 1.0
+murex ratchet status                 # 검증됨/전체 + 현재 프런티어
+```
+
+세 번째 스킬(`skills/audit/SKILL.md`, 호출은 `/murex:audit`)은 진행 중인
 장부를 바이너리가 강제할 수 없는 규율 기준으로 검토합니다 — 점수가 실제로
 순위를 만드는지, 게이트 증거가 실제로 리스크를 해소하는지, 노출이 실제로
 줄어드는지 — 그리고 나선 흉내를 낸 증분 개발을 적발합니다. 판정은

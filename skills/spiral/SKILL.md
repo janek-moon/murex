@@ -1,6 +1,6 @@
 ---
 name: spiral
-description: "Run risk-driven spiral-model development: register risks, spike the largest one per cycle in an isolated subagent, gate on a commitment review, repeat until exposure is drained"
+description: "Use when a coding task has real unknowns - an unproven integration, an unvalidated performance target, a vendor API that may not behave as its docs claim - and you want to de-risk before committing. Runs risk-driven spiral-model development: register and score the unknowns, spike the largest risk each cycle in a fresh subagent, gate on a commitment review, repeat until the exposure is drained. For clear, well-specified requirements, use ratchet instead."
 ---
 
 # murex - Spiral-Model Conductor
@@ -28,11 +28,11 @@ cycles decides whether the next one is worth its cost.
 
 ## Prerequisites
 
-`murex` on PATH. If missing, fetch the prebuilt binary for this platform
-(falls back to a cargo build when no release asset fits):
+`murex` on PATH, new enough to have `--adopt`. Feature-detect and (re)install
+if missing or stale (falls back to a cargo build when no release asset fits):
 
 ```bash
-command -v murex || curl -fsSL https://raw.githubusercontent.com/janek-moon/murex/main/install.sh | sh
+murex commit --help 2>/dev/null | grep -q -- --adopt || curl -fsSL https://raw.githubusercontent.com/janek-moon/murex/main/install.sh | sh
 ```
 
 ## The loop
@@ -102,6 +102,11 @@ Pass `--resolve` only when the evidence genuinely retires the risk. An
 inconclusive spike leaves the risk open, and it will be picked again - which
 is the correct signal that it needs another cycle.
 
+On `pivot`, name the alternative you are switching to with `--adopt
+"<alternative>"`; it becomes the spiral's current approach and is added to
+the alternatives list if new. `murex commit --decision pivot --adopt "OT
+with a central server" --cost 1.0 --outcome "CRDT memory too high"`.
+
 ### 6. Repeat until drained
 
 Go back to step 3. Check convergence with:
@@ -115,6 +120,12 @@ Falling exposure against rising cost is convergence; the spiral is done when
 `remaining_exposure` reaches 0 or a commit decides `stop`. Flat exposure
 across two cycles means the spikes are not producing evidence - reframe the
 risk with the human before spending another cycle.
+
+### When the exposure drains
+
+A drained spiral (`remaining_exposure` 0) means the unknowns are retired and
+the requirements are now clear. `status` prints a `handoff` line: switch to
+`/murex:ratchet` to build the de-risked feature bottom-up, verifying each layer.
 
 ## Notes
 

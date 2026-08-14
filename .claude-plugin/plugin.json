@@ -1,7 +1,7 @@
 {
   "name": "murex",
-  "version": "0.4.0",
-  "description": "Boehm spiral-model conductor: risk register, top-risk selection, and the commitment gate between cycles. Spikes run in a fresh subagent of the conducting agent.",
+  "version": "0.5.0",
+  "description": "Two disciplined build loops for coding agents: a risk-driven spiral (spike the largest unknown each cycle) for unclear requirements, and a verification-gated ratchet (build bottom-up, verify each layer) for clear ones.",
   "author": {
     "name": "janek-moon",
     "url": "https://github.com/janek-moon"

@@ -74,5 +74,5 @@ if [ -d "$SKILLS_DIR" ] && [ -d "$HOME/.codex" ]; then
 fi
 
 echo
-echo "Done. In Claude Code: /murex:spiral, /murex:audit. By hand:"
+echo "Done. In Claude Code: /murex:spiral, /murex:ratchet, /murex:audit. By hand:"
 echo "  murex --root <target-repo> status"
