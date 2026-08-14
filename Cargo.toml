@@ -2,7 +2,7 @@
 name = "murex"
 version = "0.5.0"
 edition = "2021"
-description = "Boehm spiral-model conductor: risk register, top-risk selection, and the commitment gate between cycles"
+description = "Two build loops for coding agents: a risk-driven spiral and a verification-gated ratchet, both ledger-backed"
 license = "MIT"
 
 [dependencies]

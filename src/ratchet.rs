@@ -9,7 +9,7 @@
 //! This module is only that layer: the component register and step
 //! bookkeeping. It never executes work itself.
 
-use crate::{err, now, round4, SpiralError};
+use crate::{check_cost, err, now, round4, SpiralError};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::fs;
@@ -299,9 +299,7 @@ fn take_pending(state: &Ratchet, id: &str) -> Result<usize> {
 /// records evidence, and ratchets the whole thing to `complete` once every
 /// component has been verified.
 pub fn verify(root: &Path, id: &str, evidence: &str, cost: f64) -> Result<Value> {
-    if cost < 0.0 {
-        return err(format!("cost must not be negative, got {cost}"));
-    }
+    check_cost(cost)?;
     if evidence.trim().is_empty() {
         return err("evidence must not be empty - a verification with no proof is not a verification");
     }
@@ -339,9 +337,7 @@ pub fn verify(root: &Path, id: &str, evidence: &str, cost: f64) -> Result<Value>
 /// picked again. A ratchet never slips a *verified* level - only a still-open
 /// step can fail, so this cannot undo a previous verification.
 pub fn rework(root: &Path, id: &str, note: &str, cost: f64) -> Result<Value> {
-    if cost < 0.0 {
-        return err(format!("cost must not be negative, got {cost}"));
-    }
+    check_cost(cost)?;
     let mut state = load(root)?;
     let si = take_pending(&state, id)?;
     let ci = component_index(&state, id)?;

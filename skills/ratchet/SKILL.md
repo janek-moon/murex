@@ -93,3 +93,4 @@ component is verified; confirm the whole against the `start` requirement.
   It is independent of a spiral's `.murex/spiral.json` - a repo can run either.
 - A verified component is final - the ratchet does not slip. Decompose so that
   "verified" is a claim you can stand behind.
+- `murex ratchet list` groups components by state; `murex ratchet stop --reason "..."` abandons the ratchet.
