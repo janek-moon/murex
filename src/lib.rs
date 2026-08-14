@@ -94,6 +94,8 @@ pub struct Cycle {
     pub resolved_risks: Option<Vec<String>>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub closed_at: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub adopted: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -109,6 +111,8 @@ pub struct Spiral {
     pub cycles: Vec<Cycle>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub stopped_reason: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub approach: Option<String>,
 }
 
 fn state_file(root: &Path) -> PathBuf {
@@ -206,6 +210,7 @@ pub fn start(
         risks: Vec::new(),
         cycles: Vec::new(),
         stopped_reason: None,
+        approach: None,
     };
     save(root, &state)?;
     Ok(json!({
@@ -285,6 +290,8 @@ fn brief(state: &Spiral, risk: &Risk, cycle_n: u32) -> Value {
         "exposure": risk.exposure(),
         "planned_mitigation": risk.mitigation,
         "constraints": state.constraints,
+        "alternatives": state.alternatives,
+        "approach": state.approach,
         "instruction": format!(
             "Cycle {cycle_n} exists to retire exactly one risk: {} (exposure {:.2}). \
              Build the smallest prototype or spike that produces evidence for or \
@@ -335,6 +342,7 @@ pub fn open_cycle(root: &Path, objectives: Vec<String>) -> Result<Value> {
         outcome: String::new(),
         resolved_risks: None,
         closed_at: None,
+        adopted: None,
     };
     state.cycles.push(entry);
     // Selecting a risk marks it as being worked, not resolved.
@@ -362,12 +370,16 @@ pub fn commit(
     outcome: &str,
     resolve: Vec<String>,
     evidence: &str,
+    adopt: &str,
 ) -> Result<Value> {
     if !DECISIONS.contains(&decision) {
         return err(format!("decision must be one of {DECISIONS:?}"));
     }
     if cost < 0.0 {
         return err(format!("cost must not be negative, got {cost}"));
+    }
+    if !adopt.is_empty() && decision != "pivot" {
+        return err("--adopt requires --decision pivot");
     }
     let mut state = load(root)?;
     let Some(index) = pending_index(&state) else {
@@ -393,6 +405,13 @@ pub fn commit(
     entry.closed_at = Some(now());
     // The spiral's radius: cost accumulated across every cycle so far.
     state.cumulative_cost = round4(state.cumulative_cost + cost);
+    if decision == "pivot" && !adopt.is_empty() {
+        state.cycles[index].adopted = Some(adopt.to_string());
+        state.approach = Some(adopt.to_string());
+        if !state.alternatives.iter().any(|a| a == adopt) {
+            state.alternatives.push(adopt.to_string());
+        }
+    }
     if decision == "stop" {
         state.status = "stopped".to_string();
     }
@@ -454,5 +473,7 @@ pub fn status(root: &Path) -> Result<Value> {
         "open_risks": open_risks,
         "pending_cycle": pending_index(&state).map(|i| state.cycles[i].n),
         "history": history,
+        "alternatives": state.alternatives,
+        "approach": state.approach,
     }))
 }

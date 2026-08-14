@@ -63,22 +63,22 @@ fn spiral_drives_cycles_by_risk_exposure() {
     expect_err(sp::open_cycle(root, vec![]), "still open");
 
     expect_err(
-        sp::commit(root, "maybe", 0.0, "", vec![], ""),
+        sp::commit(root, "maybe", 0.0, "", vec![], "", ""),
         "decision must be one of",
     );
     expect_err(
-        sp::commit(root, "continue", -1.0, "", vec![], ""),
+        sp::commit(root, "continue", -1.0, "", vec![], "", ""),
         "must not be negative",
     );
     expect_err(
-        sp::commit(root, "continue", 0.0, "", vec!["R99".into()], ""),
+        sp::commit(root, "continue", 0.0, "", vec!["R99".into()], "", ""),
         "unknown risk",
     );
     // A rejected commit must leave the cycle open, not half-closed.
     assert_eq!(number(&sp::status(root).unwrap(), "/pending_cycle"), 1.0);
 
     let before = number(&sp::status(root).unwrap(), "/remaining_exposure");
-    let done = sp::commit(root, "continue", 1.5, "", vec!["R2".into()], "380MB").expect("commit");
+    let done = sp::commit(root, "continue", 1.5, "", vec!["R2".into()], "380MB", "").expect("commit");
     assert_eq!(done.pointer("/resolved_risks").unwrap().as_array().unwrap().len(), 1);
     assert_eq!(number(&done, "/cumulative_cost"), 1.5);
     // Retiring a risk must shrink remaining exposure.
@@ -89,7 +89,7 @@ fn spiral_drives_cycles_by_risk_exposure() {
     // Next cycle picks the new leader and cost accumulates as radius.
     let second = sp::open_cycle(root, vec![]).expect("cycle 2");
     assert_eq!(second.pointer("/brief/risk_id").unwrap(), "R3");
-    sp::commit(root, "continue", 2.0, "", vec![], "").expect("commit 2");
+    sp::commit(root, "continue", 2.0, "", vec![], "", "").expect("commit 2");
     let status = sp::status(root).expect("status");
     assert_eq!(number(&status, "/radius/cycles_completed"), 2.0);
     assert_eq!(number(&status, "/radius/cumulative_cost"), 3.5);
@@ -102,7 +102,7 @@ fn spiral_drives_cycles_by_risk_exposure() {
 
     // `stop` ends the spiral; no further cycles.
     sp::open_cycle(root, vec![]).expect("cycle 3");
-    sp::commit(root, "stop", 0.5, "not worth it", vec![], "").expect("stop decision");
+    sp::commit(root, "stop", 0.5, "not worth it", vec![], "", "").expect("stop decision");
     assert_eq!(sp::status(root).unwrap().pointer("/spiral_status").unwrap(), "stopped");
     expect_err(sp::open_cycle(root, vec![]), "no further cycles");
 }
@@ -115,7 +115,7 @@ fn drained_spiral_reports_positive_zero_exposure() {
     sp::add_risk(root, "only risk", 0.5, 0.5, "").expect("add");
     sp::open_cycle(root, vec![]).expect("cycle");
     let done =
-        sp::commit(root, "continue", 1.0, "", vec!["R1".into()], "ok").expect("commit");
+        sp::commit(root, "continue", 1.0, "", vec!["R1".into()], "ok", "").expect("commit");
     let exposure = number(&done, "/remaining_exposure");
     assert_eq!(exposure, 0.0);
     // -0.0 == 0.0, so the equality above cannot catch the sign bit; this does.
@@ -144,4 +144,51 @@ fn state_lands_under_the_tool_directory() {
     assert!(root.join(".murex/spiral.json").exists());
     // The host's directory is no longer ours to write into.
     assert!(!root.join(".ouroboros").exists());
+}
+
+#[test]
+fn pivot_adopts_an_alternative_and_surfaces_it() {
+    let tmp = TempDir::new().expect("temp dir");
+    let root = tmp.path();
+    sp::start(root, "editing", vec![], vec!["CRDT".into(), "OT".into()]).expect("start");
+    sp::add_risk(root, "CRDT memory", 0.6, 0.9, "").expect("R1");
+    sp::open_cycle(root, vec![]).expect("cycle 1");
+
+    // Adopting an alternative is only valid on a pivot.
+    expect_err(
+        sp::commit(root, "continue", 1.0, "", vec![], "", "OT"),
+        "--adopt requires --decision pivot",
+    );
+
+    // Pivot to OT: recorded on the cycle and as the spiral's current approach.
+    sp::commit(root, "pivot", 1.0, "CRDT too heavy", vec![], "", "OT").expect("pivot");
+    let status = sp::status(root).expect("status");
+    assert_eq!(status.pointer("/approach").unwrap(), "OT");
+    let alts = status.pointer("/alternatives").unwrap().as_array().unwrap();
+    assert!(alts.iter().any(|a| a == "OT"));
+
+    // Pivoting to a newly-discovered approach appends it to alternatives.
+    sp::open_cycle(root, vec![]).expect("cycle 2");
+    sp::commit(root, "pivot", 1.0, "", vec![], "", "server-authoritative").expect("pivot 2");
+    let alts2 = sp::load(root).unwrap().alternatives;
+    assert!(alts2.iter().any(|a| a == "server-authoritative"));
+    // The brief carries the current approach so a spike knows its context.
+    let opened = sp::open_cycle(root, vec![]).expect("cycle 3");
+    assert_eq!(opened.pointer("/brief/approach").unwrap(), "server-authoritative");
+}
+
+#[test]
+fn old_spiral_state_without_approach_still_loads() {
+    let tmp = TempDir::new().expect("temp dir");
+    let root = tmp.path();
+    std::fs::create_dir_all(root.join(".murex")).unwrap();
+    // A 0.4.0 ledger: no `approach`, cycles have no `adopted`.
+    std::fs::write(root.join(".murex/spiral.json"), r#"{
+      "objective":"legacy","created_at":"2026-01-01T00:00:00Z","status":"active",
+      "cycle":0,"cumulative_cost":0.0,"constraints":[],"alternatives":[],
+      "risks":[],"cycles":[]
+    }"#).unwrap();
+    let state = sp::load(root).expect("legacy loads");
+    assert_eq!(state.objective, "legacy");
+    assert!(state.approach.is_none());
 }
