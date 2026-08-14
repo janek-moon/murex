@@ -366,9 +366,66 @@ pub fn rework(root: &Path, id: &str, note: &str, cost: f64) -> Result<Value> {
     }))
 }
 
-/// Stub - full status view lands in a later task. Enough for now to report
-/// the objective and confirm whether a ratchet exists at all.
 pub fn status(root: &Path) -> Result<Value> {
     let state = load(root)?;
-    Ok(json!({ "objective": state.objective, "ratchet_status": state.status }))
+    let verified = state.components.iter().filter(|c| c.status == "verified").count();
+    let total = state.components.len();
+    let unbuilt = state.components.iter().filter(|c| c.status == "unbuilt").count();
+    let frontier: Vec<String> =
+        buildable_frontier(&state).iter().map(|c| c.id.clone()).collect();
+    let components: Vec<Value> = state
+        .components
+        .iter()
+        .map(|c| json!({
+            "id": c.id, "description": c.description, "status": c.status,
+            "depth": depth(&state, c),
+            "depends_on": c.depends_on,
+        }))
+        .collect();
+    let history: Vec<Value> = state
+        .steps
+        .iter()
+        .map(|s| json!({ "n": s.n, "component": s.component, "result": s.result, "cost": s.cost }))
+        .collect();
+    Ok(json!({
+        "objective": state.objective,
+        "requirement": state.requirement,
+        "ratchet_status": state.status,
+        "step": state.step,
+        "radius": {
+            "steps_completed": state.steps.iter().filter(|s| s.result.is_some()).count(),
+            "cumulative_cost": state.cumulative_cost,
+        },
+        "progress": { "verified": verified, "total": total, "unbuilt": unbuilt },
+        "frontier": frontier,
+        "components": components,
+        "pending_step": pending_index(&state).map(|i| state.steps[i].n),
+        "history": history,
+    }))
+}
+
+pub fn list(root: &Path) -> Result<Value> {
+    let state = load(root)?;
+    let frontier_ids: Vec<String> =
+        buildable_frontier(&state).iter().map(|c| c.id.clone()).collect();
+    let pick = |pred: &dyn Fn(&Component) -> bool| -> Vec<Value> {
+        state.components.iter().filter(|c| pred(c))
+            .map(|c| json!({ "id": c.id, "description": c.description,
+                             "status": c.status, "depth": depth(&state, c) }))
+            .collect()
+    };
+    Ok(json!({
+        "verified": pick(&|c| c.status == "verified"),
+        "building": pick(&|c| c.status == "building"),
+        "frontier": pick(&|c| frontier_ids.contains(&c.id)),
+        "blocked":  pick(&|c| c.status == "unbuilt" && !frontier_ids.contains(&c.id)),
+    }))
+}
+
+pub fn stop(root: &Path, reason: &str) -> Result<Value> {
+    let mut state = load(root)?;
+    state.status = "stopped".to_string();
+    state.stopped_reason = Some(reason.to_string());
+    save(root, &state)?;
+    Ok(json!({ "ratchet_status": "stopped", "reason": reason }))
 }

@@ -156,3 +156,35 @@ fn rework_returns_a_component_to_the_frontier() {
     assert_eq!(ids, ["C1"]);
     rt::open_step(root).expect("re-open C1");
 }
+
+#[test]
+fn status_reports_progress_and_frontier() {
+    let tmp = TempDir::new().expect("temp dir");
+    let root = tmp.path();
+    rt::start(root, "feature", "acceptance").expect("start");
+    rt::add_component(root, "leaf", "spec1", vec![]).expect("C1");
+    rt::add_component(root, "top", "spec2", vec!["C1".into()]).expect("C2");
+
+    let s = rt::status(root).expect("status");
+    assert_eq!(s.pointer("/ratchet_status").unwrap(), "active");
+    assert_eq!(s.pointer("/progress/verified").unwrap(), 0);
+    assert_eq!(s.pointer("/progress/total").unwrap(), 2);
+    // Only the leaf is on the frontier.
+    assert_eq!(s.pointer("/frontier/0").unwrap(), "C1");
+
+    rt::open_step(root).expect("open");
+    rt::verify(root, "C1", "green", 1.0).expect("verify");
+    let s2 = rt::status(root).expect("status");
+    assert_eq!(s2.pointer("/progress/verified").unwrap(), 1);
+    assert_eq!(s2.pointer("/frontier/0").unwrap(), "C2"); // frontier advanced
+
+    // list groups by state.
+    let l = rt::list(root).expect("list");
+    assert_eq!(l.pointer("/verified/0/id").unwrap(), "C1");
+    assert_eq!(l.pointer("/frontier/0/id").unwrap(), "C2");
+
+    // stop ends it.
+    rt::stop(root, "descoped").expect("stop");
+    assert_eq!(rt::load(root).unwrap().status, "stopped");
+    assert_eq!(rt::status(root).unwrap().pointer("/ratchet_status").unwrap(), "stopped");
+}
