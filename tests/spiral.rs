@@ -195,6 +195,20 @@ fn drained_spiral_points_at_the_ratchet() {
 }
 
 #[test]
+fn commit_rejects_non_finite_cost() {
+    let tmp = TempDir::new().expect("temp dir");
+    let root = tmp.path();
+    sp::start(root, "ship export", vec![], vec![]).expect("start");
+    sp::add_risk(root, "only risk", 0.5, 0.5, "").expect("R1");
+    sp::open_cycle(root, vec![]).expect("cycle");
+    // NaN slips past `< 0.0` (false), so it needs its own finite check.
+    expect_err(
+        sp::commit(root, "continue", f64::NAN, "", vec![], "", ""),
+        "must be finite",
+    );
+}
+
+#[test]
 fn old_spiral_state_without_approach_still_loads() {
     let tmp = TempDir::new().expect("temp dir");
     let root = tmp.path();

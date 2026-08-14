@@ -195,6 +195,19 @@ fn check_unit(value: f64, label: &str) -> Result<()> {
     Ok(())
 }
 
+/// NaN and infinity slip past `< 0.0` (false for both), corrupting the cost
+/// ledger with a JSON `null` that the next `load` can't deserialize. Reject
+/// both before any state is touched.
+pub(crate) fn check_cost(cost: f64) -> Result<()> {
+    if !cost.is_finite() {
+        return err(format!("cost must be finite, got {cost}"));
+    }
+    if cost < 0.0 {
+        return err(format!("cost must not be negative, got {cost}"));
+    }
+    Ok(())
+}
+
 /// Quadrant 1 of cycle 0: fix objectives, alternatives, constraints.
 pub fn start(
     root: &Path,
@@ -388,9 +401,7 @@ pub fn commit(
     if !DECISIONS.contains(&decision) {
         return err(format!("decision must be one of {DECISIONS:?}"));
     }
-    if cost < 0.0 {
-        return err(format!("cost must not be negative, got {cost}"));
-    }
+    check_cost(cost)?;
     if !adopt.is_empty() && decision != "pivot" {
         return err("--adopt requires --decision pivot");
     }

@@ -158,6 +158,22 @@ fn rework_returns_a_component_to_the_frontier() {
 }
 
 #[test]
+fn verify_and_rework_reject_non_finite_and_negative_cost() {
+    let tmp = TempDir::new().expect("temp dir");
+    let root = tmp.path();
+    rt::start(root, "feature", "acceptance").expect("start");
+    rt::add_component(root, "leaf", "spec1", vec![]).expect("C1");
+    rt::open_step(root).expect("open C1");
+
+    // Both entry points reject the cost before touching state, so the same
+    // open step survives every one of these rejected calls.
+    expect_err(rt::verify(root, "C1", "green", f64::NAN), "must be finite");
+    expect_err(rt::rework(root, "C1", "note", f64::NAN), "must be finite");
+    expect_err(rt::verify(root, "C1", "green", -1.0), "must not be negative");
+    expect_err(rt::rework(root, "C1", "note", -1.0), "must not be negative");
+}
+
+#[test]
 fn status_reports_progress_and_frontier() {
     let tmp = TempDir::new().expect("temp dir");
     let root = tmp.path();
