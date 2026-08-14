@@ -46,6 +46,7 @@ pub struct Step {
     pub result: Option<String>,
     pub cost: f64,
     pub note: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub closed_at: Option<String>,
 }
 
@@ -59,6 +60,7 @@ pub struct Ratchet {
     pub cumulative_cost: f64,
     pub components: Vec<Component>,
     pub steps: Vec<Step>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub stopped_reason: Option<String>,
 }
 
