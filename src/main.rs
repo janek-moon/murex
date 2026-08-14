@@ -16,7 +16,7 @@ use serde_json::{json, Value};
 use murex as spiral;
 
 #[derive(Parser)]
-#[command(name = "murex", about = "Risk-driven spiral-model cycles.")]
+#[command(name = "murex", version, about = "Risk-driven spiral-model cycles.")]
 struct Cli {
     /// Repository root holding .murex/spiral.json.
     #[arg(long, global = true, default_value = ".")]
@@ -65,6 +65,11 @@ enum Command {
     },
     /// Radius, remaining exposure, and history.
     Status,
+    /// Bottom-up, verification-gated build for clear requirements.
+    Ratchet {
+        #[command(subcommand)]
+        action: RatchetAction,
+    },
 }
 
 #[derive(Subcommand)]
@@ -85,6 +90,51 @@ enum RiskAction {
         status: String,
         #[arg(long, default_value = "")]
         evidence: String,
+    },
+}
+
+#[derive(Subcommand)]
+enum RatchetAction {
+    /// Open a ratchet for a feature with clear requirements.
+    Start {
+        objective: String,
+        #[arg(long, default_value = "")]
+        requirement: String,
+    },
+    /// Register a component and its dependencies (which must already exist).
+    Add {
+        description: String,
+        #[arg(long)]
+        requirement: String,
+        #[arg(long = "depends-on")]
+        depends_on: Vec<String>,
+    },
+    /// Emit the build brief for the lowest buildable component.
+    Next,
+    /// Gate: mark a component verified (evidence required).
+    Verify {
+        id: String,
+        #[arg(long)]
+        evidence: String,
+        #[arg(long, default_value_t = 0.0)]
+        cost: f64,
+    },
+    /// A build failed verification; return it to the frontier.
+    Rework {
+        id: String,
+        #[arg(long, default_value = "")]
+        note: String,
+        #[arg(long, default_value_t = 0.0)]
+        cost: f64,
+    },
+    /// Components grouped by state.
+    List,
+    /// Progress, frontier, and history.
+    Status,
+    /// Abandon the ratchet.
+    Stop {
+        #[arg(long, default_value = "")]
+        reason: String,
     },
 }
 
@@ -120,6 +170,20 @@ fn dispatch(cli: &Cli) -> spiral::Result<Value> {
         } => spiral::commit(root, decision, *cost, outcome, resolve.clone(), evidence),
         Command::Stop { reason } => spiral::stop(root, reason),
         Command::Status => spiral::status(root),
+        Command::Ratchet { action } => match action {
+            RatchetAction::Start { objective, requirement } =>
+                spiral::ratchet::start(root, objective, requirement),
+            RatchetAction::Add { description, requirement, depends_on } =>
+                spiral::ratchet::add_component(root, description, requirement, depends_on.clone()),
+            RatchetAction::Next => spiral::ratchet::open_step(root),
+            RatchetAction::Verify { id, evidence, cost } =>
+                spiral::ratchet::verify(root, id, evidence, *cost),
+            RatchetAction::Rework { id, note, cost } =>
+                spiral::ratchet::rework(root, id, note, *cost),
+            RatchetAction::List => spiral::ratchet::list(root),
+            RatchetAction::Status => spiral::ratchet::status(root),
+            RatchetAction::Stop { reason } => spiral::ratchet::stop(root, reason),
+        },
     }
 }
 
