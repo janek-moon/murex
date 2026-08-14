@@ -1,6 +1,6 @@
 ---
 name: audit
-description: "Audit a running spiral against the risk-driven invariants the binary cannot enforce: scores that actually rank, gate evidence that actually retires risks, exposure that actually drains, a stop that gets considered. Verdicts cite the ledger"
+description: "Use when you want to check whether a running or finished spiral stayed risk-driven or became an incremental build wearing spiral clothing. Audits a spiral against the risk-driven invariants the binary cannot enforce: scores that actually rank, gate evidence that actually retires risks, exposure that actually drains, a stop that gets considered. Verdicts cite the ledger."
 ---
 
 # murex - Spiral Audit
