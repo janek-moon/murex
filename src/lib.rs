@@ -163,6 +163,19 @@ fn total_exposure(state: &Spiral) -> f64 {
     round4(ranked_open_risks(state).iter().map(|r| r.exposure()).sum::<f64>() + 0.0)
 }
 
+/// When exposure is drained and the spiral is still active, the remaining
+/// unknowns are gone: the natural next step is to build, which is the ratchet.
+fn handoff(state: &Spiral) -> Option<String> {
+    if state.status == "active" && total_exposure(state) == 0.0 {
+        Some(format!(
+            "requirements de-risked - run `murex ratchet start \"{}\"` to build it out",
+            state.objective
+        ))
+    } else {
+        None
+    }
+}
+
 fn pending_index(state: &Spiral) -> Option<usize> {
     state.cycles.iter().rposition(|c| c.decision.is_none())
 }
@@ -423,6 +436,7 @@ pub fn commit(
         "cumulative_cost": state.cumulative_cost,
         "spiral_status": state.status,
         "remaining_exposure": total_exposure(&state),
+        "handoff": handoff(&state),
     }))
 }
 
@@ -470,6 +484,7 @@ pub fn status(root: &Path) -> Result<Value> {
             "cumulative_cost": state.cumulative_cost,
         },
         "remaining_exposure": total_exposure(&state),
+        "handoff": handoff(&state),
         "open_risks": open_risks,
         "pending_cycle": pending_index(&state).map(|i| state.cycles[i].n),
         "history": history,
