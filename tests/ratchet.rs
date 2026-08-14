@@ -55,3 +55,49 @@ fn start_then_add_registers_components() {
     assert_eq!(state.requirement, "a user downloads a valid CSV");
     assert_eq!(state.status, "active");
 }
+
+#[test]
+fn next_walks_the_frontier_bottom_up() {
+    let tmp = TempDir::new().expect("temp dir");
+    let root = tmp.path();
+    rt::start(root, "feature", "acceptance").expect("start");
+
+    // No components yet: next must refuse.
+    expect_err(rt::open_step(root), "no components");
+
+    // C1 leaf; C2 depends on C1; C3 depends on C2. Depth 0,1,2.
+    rt::add_component(root, "leaf", "spec1", vec![]).expect("C1");
+    rt::add_component(root, "mid", "spec2", vec!["C1".into()]).expect("C2");
+    rt::add_component(root, "top", "spec3", vec!["C2".into()]).expect("C3");
+
+    // The only buildable component is the leaf C1.
+    let state = rt::load(root).unwrap();
+    let frontier: Vec<String> = rt::buildable_frontier(&state)
+        .iter().map(|c| c.id.clone()).collect();
+    assert_eq!(frontier, ["C1"]);
+
+    // `next` opens a step against C1 and briefs it.
+    let opened = rt::open_step(root).expect("next");
+    assert_eq!(opened.pointer("/step").unwrap(), 1);
+    assert_eq!(opened.pointer("/brief/component_id").unwrap(), "C1");
+    assert_eq!(opened.pointer("/brief/requirement").unwrap(), "spec1");
+    // C1 is now building.
+    assert_eq!(rt::load(root).unwrap().components[0].status, "building");
+
+    // One step at a time.
+    expect_err(rt::open_step(root), "still open");
+}
+
+#[test]
+fn frontier_orders_by_depth_then_id() {
+    let tmp = TempDir::new().expect("temp dir");
+    let root = tmp.path();
+    rt::start(root, "f", "a").expect("start");
+    // Eleven leaves: tie-break must be C1 before C10 (numeric id order).
+    for i in 1..=11 {
+        rt::add_component(root, &format!("leaf {i}"), "spec", vec![]).expect("add");
+    }
+    let state = rt::load(root).unwrap();
+    let ids: Vec<String> = rt::buildable_frontier(&state).iter().map(|c| c.id.clone()).collect();
+    assert_eq!(ids[..3], ["C1", "C2", "C3"]);
+}
