@@ -178,6 +178,23 @@ fn pivot_adopts_an_alternative_and_surfaces_it() {
 }
 
 #[test]
+fn drained_spiral_points_at_the_ratchet() {
+    let tmp = TempDir::new().expect("temp dir");
+    let root = tmp.path();
+    sp::start(root, "ship export", vec![], vec![]).expect("start");
+    sp::add_risk(root, "only risk", 0.5, 0.5, "").expect("R1");
+    sp::open_cycle(root, vec![]).expect("cycle");
+    let done = sp::commit(root, "continue", 1.0, "", vec!["R1".into()], "ok", "").expect("commit");
+    // Exposure is drained → requirements are clear → point at the ratchet.
+    assert_eq!(number(&done, "/remaining_exposure"), 0.0);
+    let handoff = done.pointer("/handoff").unwrap().as_str().unwrap();
+    assert!(handoff.contains("murex ratchet start"));
+    // status echoes it while the spiral is still active and drained.
+    let s = sp::status(root).expect("status");
+    assert!(s.pointer("/handoff").unwrap().as_str().unwrap().contains("ratchet"));
+}
+
+#[test]
 fn old_spiral_state_without_approach_still_loads() {
     let tmp = TempDir::new().expect("temp dir");
     let root = tmp.path();
