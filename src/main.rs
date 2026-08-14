@@ -57,6 +57,8 @@ enum Command {
         resolve: Vec<String>,
         #[arg(long, default_value = "")]
         evidence: String,
+        #[arg(long, default_value = "")]
+        adopt: String,
     },
     /// Abandon the spiral.
     Stop {
@@ -167,7 +169,8 @@ fn dispatch(cli: &Cli) -> spiral::Result<Value> {
             outcome,
             resolve,
             evidence,
-        } => spiral::commit(root, decision, *cost, outcome, resolve.clone(), evidence),
+            adopt,
+        } => spiral::commit(root, decision, *cost, outcome, resolve.clone(), evidence, adopt),
         Command::Stop { reason } => spiral::stop(root, reason),
         Command::Status => spiral::status(root),
         Command::Ratchet { action } => match action {
