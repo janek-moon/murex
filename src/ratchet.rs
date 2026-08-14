@@ -90,15 +90,52 @@ pub fn save(root: &Path, state: &Ratchet) -> Result<()> {
         .map_err(|e| SpiralError(format!("cannot write {}: {e}", path.display())))
 }
 
-// Not yet called - verify/rework land in a later task and will use this for
-// id lookups by exact match (unlike add_component's existence-only check).
-#[allow(dead_code)]
 fn component_index(state: &Ratchet, id: &str) -> Result<usize> {
     state
         .components
         .iter()
         .position(|c| c.id == id)
         .ok_or_else(|| SpiralError(format!("unknown component {id:?}")))
+}
+
+/// Component ids are `C<n>`; compare the number so C10 sorts after C2.
+fn id_order(id: &str) -> u32 {
+    id.trim_start_matches('C').parse().unwrap_or(u32::MAX)
+}
+
+fn is_verified(state: &Ratchet, id: &str) -> bool {
+    state.components.iter().any(|c| c.id == id && c.status == "verified")
+}
+
+/// Longest path to a leaf: 0 for no deps, else 1 + max(dep depth).
+/// The DAG is acyclic by construction (deps pre-exist), so this terminates.
+fn depth(state: &Ratchet, comp: &Component) -> u32 {
+    comp.depends_on
+        .iter()
+        .filter_map(|d| state.components.iter().find(|c| &c.id == d))
+        .map(|d| 1 + depth(state, d))
+        .max()
+        .unwrap_or(0)
+}
+
+/// Unbuilt components whose every dependency is verified, lowest depth first,
+/// ties by id. The reason `next` can never hand back unverified ground.
+pub fn buildable_frontier(state: &Ratchet) -> Vec<&Component> {
+    let mut frontier: Vec<&Component> = state
+        .components
+        .iter()
+        .filter(|c| c.status == "unbuilt" && c.depends_on.iter().all(|d| is_verified(state, d)))
+        .collect();
+    frontier.sort_by(|a, b| {
+        depth(state, a)
+            .cmp(&depth(state, b))
+            .then_with(|| id_order(&a.id).cmp(&id_order(&b.id)))
+    });
+    frontier
+}
+
+fn pending_index(state: &Ratchet) -> Option<usize> {
+    state.steps.iter().rposition(|s| s.result.is_none())
 }
 
 /// Fix the objective and requirement that every component must serve.
@@ -168,6 +205,80 @@ pub fn add_component(
     state.components.push(component);
     save(root, &state)?;
     Ok(json!({ "component": value }))
+}
+
+fn build_brief(state: &Ratchet, comp: &Component, step_n: u32) -> Value {
+    let deps: Vec<Value> = comp
+        .depends_on
+        .iter()
+        .filter_map(|d| state.components.iter().find(|c| &c.id == d))
+        .map(|d| json!({ "id": d.id, "description": d.description, "evidence": d.evidence }))
+        .collect();
+    json!({
+        "step": step_n,
+        "objective": state.objective,
+        "build": comp.description,
+        "component_id": comp.id,
+        "requirement": comp.requirement,
+        "depends_on": deps,
+        "instruction": format!(
+            "Step {step_n} builds exactly one component: {} - it must satisfy: {}. \
+             Build the smallest implementation that satisfies that requirement, then \
+             verify against it. You may rely on the already-verified components listed \
+             in depends_on. Do not broaden scope - other components get their own steps.",
+            comp.description, comp.requirement,
+        ),
+    })
+}
+
+/// Selection + build brief: pick the top of the buildable frontier and open a
+/// step against it.
+pub fn open_step(root: &Path) -> Result<Value> {
+    let mut state = load(root)?;
+    if state.status != "active" {
+        return err(format!("ratchet is {} - no further steps", state.status));
+    }
+    if let Some(i) = pending_index(&state) {
+        return err(format!(
+            "step {} is still open - close it with `murex ratchet verify <id> --evidence` \
+             or `murex ratchet rework <id>`",
+            state.steps[i].n
+        ));
+    }
+    if state.components.is_empty() {
+        return err("no components - add one with `murex ratchet add`");
+    }
+    // Every component is unbuilt or verified here (no step is pending), so the
+    // minimum-depth unbuilt component's deps are all verified: the frontier is
+    // non-empty whenever any component is unbuilt.
+    let top_id = match buildable_frontier(&state).first() {
+        Some(c) => c.id.clone(),
+        None => return err("all components verified - ratchet is complete"),
+    };
+    let idx = component_index(&state, &top_id)?;
+    state.step += 1;
+    let n = state.step;
+    state.steps.push(Step {
+        n,
+        opened_at: now(),
+        component: top_id.clone(),
+        result: None,
+        cost: 0.0,
+        note: String::new(),
+        closed_at: None,
+    });
+    state.components[idx].status = "building".to_string();
+    state.components[idx].step_built = Some(n);
+    let brief = build_brief(&state, &state.components[idx], n);
+    save(root, &state)?;
+    Ok(json!({
+        "step": n,
+        "brief": brief,
+        "next": [
+            "hand the brief to a fresh subagent and collect its evidence",
+            format!("then `murex ratchet verify {top_id} --evidence \"<proof>\"`"),
+        ],
+    }))
 }
 
 /// Stub - full status view lands in a later task. Enough for now to report
