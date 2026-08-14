@@ -101,3 +101,58 @@ fn frontier_orders_by_depth_then_id() {
     let ids: Vec<String> = rt::buildable_frontier(&state).iter().map(|c| c.id.clone()).collect();
     assert_eq!(ids[..3], ["C1", "C2", "C3"]);
 }
+
+#[test]
+fn verify_gates_on_evidence_and_ratchets_up() {
+    let tmp = TempDir::new().expect("temp dir");
+    let root = tmp.path();
+    rt::start(root, "feature", "acceptance").expect("start");
+    rt::add_component(root, "leaf", "spec1", vec![]).expect("C1");
+    rt::add_component(root, "top", "spec2", vec!["C1".into()]).expect("C2");
+
+    // Can't verify with no open step.
+    expect_err(rt::verify(root, "C1", "proof", 1.0), "no open step");
+
+    rt::open_step(root).expect("open C1");
+    // Evidence is mandatory: a verification with no proof is not a verification.
+    expect_err(rt::verify(root, "C1", "   ", 1.0), "evidence");
+    // The id must match the open step's component.
+    expect_err(rt::verify(root, "C2", "proof", 1.0), "open step targets");
+
+    let v = rt::verify(root, "C1", "unit tests green, RFC-4180 sample matches", 1.0).expect("verify");
+    assert_eq!(v.pointer("/result").unwrap(), "verified");
+    assert_eq!(v.pointer("/ratchet_status").unwrap(), "active");
+    let state = rt::load(root).unwrap();
+    assert_eq!(state.components[0].status, "verified");
+    assert_eq!(state.cumulative_cost, 1.0);
+
+    // C2 is now buildable; build and verify it → ratchet completes.
+    let opened = rt::open_step(root).expect("open C2");
+    assert_eq!(opened.pointer("/brief/component_id").unwrap(), "C2");
+    let done = rt::verify(root, "C2", "integration test writes 1000 rows", 2.0).expect("verify C2");
+    assert_eq!(done.pointer("/ratchet_status").unwrap(), "complete");
+    assert_eq!(rt::load(root).unwrap().status, "complete");
+
+    // A completed ratchet takes no more steps; verified stays verified.
+    expect_err(rt::open_step(root), "complete");
+}
+
+#[test]
+fn rework_returns_a_component_to_the_frontier() {
+    let tmp = TempDir::new().expect("temp dir");
+    let root = tmp.path();
+    rt::start(root, "feature", "acceptance").expect("start");
+    rt::add_component(root, "leaf", "spec1", vec![]).expect("C1");
+
+    rt::open_step(root).expect("open C1");
+    let r = rt::rework(root, "C1", "encoder mangles embedded quotes", 0.5).expect("rework");
+    assert_eq!(r.pointer("/result").unwrap(), "rework");
+    // Back to unbuilt, and the failed attempt still cost radius.
+    let state = rt::load(root).unwrap();
+    assert_eq!(state.components[0].status, "unbuilt");
+    assert_eq!(state.cumulative_cost, 0.5);
+    // It is picked again.
+    let ids: Vec<String> = rt::buildable_frontier(&state).iter().map(|c| c.id.clone()).collect();
+    assert_eq!(ids, ["C1"]);
+    rt::open_step(root).expect("re-open C1");
+}

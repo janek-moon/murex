@@ -9,7 +9,7 @@
 //! This module is only that layer: the component register and step
 //! bookkeeping. It never executes work itself.
 
-use crate::{err, now, SpiralError};
+use crate::{err, now, round4, SpiralError};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::fs;
@@ -278,6 +278,91 @@ pub fn open_step(root: &Path) -> Result<Value> {
             "hand the brief to a fresh subagent and collect its evidence",
             format!("then `murex ratchet verify {top_id} --evidence \"<proof>\"`"),
         ],
+    }))
+}
+
+/// Shared close: assert an open step exists and that it targets `id`.
+fn take_pending(state: &Ratchet, id: &str) -> Result<usize> {
+    let Some(i) = pending_index(state) else {
+        return err("no open step - start one with `murex ratchet next`");
+    };
+    if state.steps[i].component != id {
+        return err(format!(
+            "open step targets {}, not {id:?}",
+            state.steps[i].component
+        ));
+    }
+    Ok(i)
+}
+
+/// Close the open step by verifying its component: locks the component,
+/// records evidence, and ratchets the whole thing to `complete` once every
+/// component has been verified.
+pub fn verify(root: &Path, id: &str, evidence: &str, cost: f64) -> Result<Value> {
+    if cost < 0.0 {
+        return err(format!("cost must not be negative, got {cost}"));
+    }
+    if evidence.trim().is_empty() {
+        return err("evidence must not be empty - a verification with no proof is not a verification");
+    }
+    let mut state = load(root)?;
+    let si = take_pending(&state, id)?;
+    let ci = component_index(&state, id)?;
+    let n = state.steps[si].n;
+    state.components[ci].status = "verified".to_string();
+    state.components[ci].evidence = evidence.to_string();
+    state.components[ci].step_verified = Some(n);
+    let step = &mut state.steps[si];
+    step.result = Some("verified".to_string());
+    step.cost = cost;
+    step.note = evidence.to_string();
+    step.closed_at = Some(now());
+    state.cumulative_cost = round4(state.cumulative_cost + cost);
+    let verified = state.components.iter().filter(|c| c.status == "verified").count();
+    let total = state.components.len();
+    if verified == total {
+        state.status = "complete".to_string();
+    }
+    save(root, &state)?;
+    Ok(json!({
+        "step": n,
+        "component": id,
+        "result": "verified",
+        "cumulative_cost": state.cumulative_cost,
+        "ratchet_status": state.status,
+        "verified": verified,
+        "total": total,
+    }))
+}
+
+/// Close the open step as a rework: the component returns to `unbuilt` to be
+/// picked again. A ratchet never slips a *verified* level - only a still-open
+/// step can fail, so this cannot undo a previous verification.
+pub fn rework(root: &Path, id: &str, note: &str, cost: f64) -> Result<Value> {
+    if cost < 0.0 {
+        return err(format!("cost must not be negative, got {cost}"));
+    }
+    let mut state = load(root)?;
+    let si = take_pending(&state, id)?;
+    let ci = component_index(&state, id)?;
+    let n = state.steps[si].n;
+    // A ratchet does not slip a *verified* level; a failed build just returns
+    // to the frontier to be picked again.
+    state.components[ci].status = "unbuilt".to_string();
+    state.components[ci].step_built = None;
+    let step = &mut state.steps[si];
+    step.result = Some("rework".to_string());
+    step.cost = cost;
+    step.note = note.to_string();
+    step.closed_at = Some(now());
+    state.cumulative_cost = round4(state.cumulative_cost + cost);
+    save(root, &state)?;
+    Ok(json!({
+        "step": n,
+        "component": id,
+        "result": "rework",
+        "cumulative_cost": state.cumulative_cost,
+        "note": note,
     }))
 }
 
